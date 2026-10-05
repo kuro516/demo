@@ -2,6 +2,9 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>ジャグルノーツ</title>
   <style>
@@ -125,6 +128,10 @@
 
     /* ===== スマホ横持ち用レイアウト（body.mobile のときだけ有効。PCの見た目は変わらない） ===== */
     #stage { display: contents; }
+    .fs-only, .fs-note { display: none; }
+    body.mobile.fs-ok .fs-only { display: inline-block; }
+    body.mobile.fs-ng .fs-note { display: block; width: 100%; text-align: center; font-size: 11px; color: #8d84a8; }
+    body.mobile.m-result .fs-only, body.mobile.m-result .fs-note { display: none !important; }
     #tapGuide, #rotateMsg { display: none; }
     .m-title-text, .m-howto { display: none; }
     body.mobile {
@@ -184,6 +191,8 @@
   <div class="controls">
     <div class="m-title-text">ジャグルノーツ 🌟 DX</div>
     <div class="m-howto">🔵 画面の<b>左側</b>をタップ＝左手　🔴 画面の<b>右側</b>をタップ＝右手（どこでもOK）</div>
+    <button id="fsBtn" class="off-btn fs-only" style="width:auto;padding:6px 14px" onclick="toggleFullscreen()">⛶ 全画面にする</button>
+    <div class="fs-note">iPhoneは「共有」→「ホーム画面に追加」から開くと全画面で遊べます</div>
     <!-- 難易度選択 -->
     <div class="diff-selector" id="diffGroup">
       <button class="diff-btn active" onclick="setDifficulty('easy')">🌱 かんたん<small class="best" id="best-easy"></small></button>
@@ -1353,6 +1362,24 @@
       r.style.borderColor = left ? "rgba(129,212,250,.8)" : "rgba(255,138,128,.8)";
       document.body.appendChild(r); setTimeout(() => r.remove(), 400);
     }, { passive: false });
+
+    // 全画面ボタン（対応しているブラウザのみ。iPhoneのSafariは非対応なので案内を出す）
+    const fsEl = document.documentElement;
+    const fsSupported = !!(fsEl.requestFullscreen || fsEl.webkitRequestFullscreen);
+    const fsActive = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+    const standalone = (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone;
+    if (isMobile() && !standalone) document.body.classList.add(fsSupported ? "fs-ok" : "fs-ng");
+    function updateFsLabel() { const b = document.getElementById("fsBtn"); if (b) b.textContent = fsActive() ? "🗗 全画面を解除" : "⛶ 全画面にする"; }
+    function toggleFullscreen() {
+      try {
+        if (fsActive()) { (document.exitFullscreen || document.webkitExitFullscreen).call(document); return; }
+        const r = (fsEl.requestFullscreen || fsEl.webkitRequestFullscreen).call(fsEl);
+        const lock = () => { try { if (screen.orientation && screen.orientation.lock) screen.orientation.lock("landscape").catch(() => {}); } catch (e) {} };
+        if (r && r.then) r.then(lock).catch(() => {}); else lock();
+      } catch (e) {}
+    }
+    document.addEventListener("fullscreenchange", () => { updateFsLabel(); setTimeout(onViewportChange, 100); });
+    document.addEventListener("webkitfullscreenchange", () => { updateFsLabel(); setTimeout(onViewportChange, 100); });
     syncMode(); onViewportChange();
 
     renderBest();
