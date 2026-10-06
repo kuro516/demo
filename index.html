@@ -94,6 +94,14 @@
       color: white;
       box-shadow: 0 4px 12px rgba(255, 64, 129, 0.4);
     }
+    .pr-row { display:flex; align-items:center; justify-content:center; gap:8px; font-size:13px; color:#ccc; flex-wrap:wrap; }
+    .pr-row input[type=range] { width:170px; accent-color:#ff4081; }
+    .pr-row .pv { min-width:118px; text-align:left; font-weight:bold; color:#fff; font-size:12px; }
+    .pr-row .style-btn { padding:5px 12px; font-size:12px; }
+    .vol-group { display:flex; flex-direction:column; gap:6px; align-items:center; }
+    .vol-row { display:flex; align-items:center; gap:10px; font-size:13px; color:#ccc; }
+    .vol-row input[type=range] { width:150px; accent-color:#ff4081; }
+    .vol-row span.val { min-width:44px; text-align:right; font-weight:bold; color:#fff; }
     .offset-row { display: flex; align-items: center; gap: 10px; font-size: 13px; color: #ccc; }
     .offset-row span.val { min-width: 64px; text-align: center; font-weight: bold; color: #fff; }
     .off-btn {
@@ -190,7 +198,7 @@
     @keyframes rip { from { transform: scale(.4); opacity: .6; } to { transform: scale(1.25); opacity: 0; } }
     /* ===== メニューの画面切り替え ===== */
     .view { display: none; flex-direction: column; align-items: center; gap: 8px; width: 100%; }
-    body[data-view="menu"] #viewMenu, body[data-view="select"] #viewSelect, body[data-view="settings"] #viewSettings { display: flex; }
+    body[data-view="menu"] #viewMenu, body[data-view="select"] #viewSelect, body[data-view="settings"] #viewSettings, body[data-view="practice"] #viewPractice { display: flex; }
     #menuViews { width: 100%; }
     body.m-play #menuViews, body.m-result #menuViews { display: none; }
     #resultBtns { display: none; gap: 10px; justify-content: center; flex-wrap: wrap; }
@@ -201,6 +209,7 @@
     #titleBg { display: none; width: 600px; height: 400px; border: 4px solid #ff4081; border-radius: 12px; background: #1e1e2f; object-fit: cover; object-position: 50% 50%;
       box-shadow: 0 8px 25px rgba(255, 64, 129, 0.3); }
     body.has-title-img.m-title #titleBg { display: block; }
+    #titleBg.jk { width: 400px; object-fit: cover; }   /* 正方形のジャケットは枠も正方形に */
     body.has-title-img.m-title #gameCanvas { display: none; }
     body.has-title-img h1, body.has-title-img .m-title-text { display: none !important; }
     .style-selector { display: flex; gap: 8px; }
@@ -247,7 +256,7 @@
   <h1>ジャグルノーツ 🌟</h1>
   
   <canvas id="gameCanvas" width="600" height="400"></canvas>
-  <img id="titleBg" src="title.png" alt="ジャグルノーツ" onerror="if(!this.dataset.fb){this.dataset.fb=1;this.src='title.png';}" onload="document.body.classList.add('has-title-img'); if (window.fitStage) fitStage();">
+  <img id="titleBg" src="title.png" alt="ジャグルノーツ" onerror="titleImgFail()" onload="document.body.classList.add('has-title-img'); if (window.fitStage) fitStage();">
   
   <div class="controls">
     <div id="menuViews">
@@ -283,14 +292,39 @@
         </div>
         <div class="style-desc" id="styleDesc"></div>
         <div class="menu-btns">
-          <button id="startBtn" class="main-btn" onclick="startAudioGame()">🎵 スタート！</button>
+          <button id="startBtn" class="main-btn" onclick="startNormal()">🎵 スタート！</button>
+          <button class="main-btn sub" onclick="openPractice()">🎯 練習</button>
           <button class="main-btn sub" onclick="showView('menu')">← メインメニュー</button>
+        </div>
+      </div>
+
+      <!-- 練習モード（区間ループ・速度） -->
+      <div class="view" id="viewPractice">
+        <div class="sec-title">🎯 練習モード <span id="prInfo" style="color:#fff"></span></div>
+        <div class="pr-row">速度
+          <span id="prSpeed"></span>
+        </div>
+        <div class="pr-row">開始 <input type="range" id="prStart" min="0" max="10" step="1" oninput="prSet('s', this.value)"><span class="pv" id="prStartVal"></span></div>
+        <div class="pr-row">終了 <input type="range" id="prEnd" min="0" max="10" step="1" oninput="prSet('e', this.value)"><span class="pv" id="prEndVal"></span></div>
+        <div class="pr-row">
+          <button class="style-btn active" id="prLoopBtn" onclick="prToggleLoop()">🔁 ループ ON</button>
+          <button class="style-btn" onclick="prJump()">🎯 同時ノーツの場所へ</button>
+        </div>
+        <div class="offset-hint">練習では記録は保存されません</div>
+        <div class="menu-btns">
+          <button class="main-btn" onclick="startPractice()">🎯 練習スタート</button>
+          <button class="main-btn sub" onclick="showView('select')">← 曲選択</button>
         </div>
       </div>
 
       <!-- ③ 設定 -->
       <div class="view" id="viewSettings">
         <div class="sec-title">設定</div>
+        <div id="volGroup" class="vol-group">
+          <label class="vol-row">🎵 曲 <input type="range" id="volBgm" min="0" max="100" step="5" oninput="setVol('bgm', this.value)"><span class="val" id="volBgmVal">100%</span></label>
+          <label class="vol-row">🔔 効果音 <input type="range" id="volSe" min="0" max="100" step="5" oninput="setVol('se', this.value)" onchange="initAudioContext(); playSE('perfect')"><span class="val" id="volSeVal">100%</span></label>
+          <div class="offset-hint vol-ios">iPhoneでは曲の音量は本体の音量ボタンで調整してください</div>
+        </div>
         <div id="offsetGroup" style="display:flex; flex-direction:column; align-items:center; gap:6px;">
           <div class="offset-row">
             タイミング調整
@@ -348,6 +382,21 @@
     // --- Web Audio API（効果音）---
     let audioCtx = null;
 
+    // ★ 音量設定（曲 / 効果音）。0〜100 で保存。効果音は全部マスターゲイン経由
+    let bgmVol = 100, seVol = 100, seMaster = null;
+    try { const a = localStorage.getItem("popcatch-vol-bgm"), b = localStorage.getItem("popcatch-vol-se"); if (a !== null) bgmVol = +a; if (b !== null) seVol = +b; } catch (e) {}
+    bgmVol = Math.max(0, Math.min(100, bgmVol || 0)); seVol = Math.max(0, Math.min(100, seVol || 0));
+    function seDest() {
+      if (!seMaster) { seMaster = audioCtx.createGain(); seMaster.gain.value = seVol / 100; seMaster.connect(audioCtx.destination); }
+      return seMaster;
+    }
+    function setVol(kind, v) {
+      v = Math.max(0, Math.min(100, +v));
+      if (kind === "bgm") { bgmVol = v; bgm.volume = v / 100; }
+      else { seVol = v; if (seMaster) seMaster.gain.value = v / 100; }
+      document.getElementById(kind === "bgm" ? "volBgmVal" : "volSeVal").textContent = v + "%";
+      try { localStorage.setItem(kind === "bgm" ? "popcatch-vol-bgm" : "popcatch-vol-se", String(v)); } catch (e) {}
+    }
     function initAudioContext() {
       if (!audioCtx) {
         audioCtx = new (window.AudioContext || window.webkitAudioContext)();
@@ -367,7 +416,7 @@
         gain.gain.setValueAtTime(0.3, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
         osc.connect(gain);
-        gain.connect(audioCtx.destination);
+        gain.connect(seDest());
         osc.start(now);
         osc.stop(now + 0.1);
       } else if (type === "good") {
@@ -379,7 +428,7 @@
         gain.gain.setValueAtTime(0.25, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.1);
         osc.connect(gain);
-        gain.connect(audioCtx.destination);
+        gain.connect(seDest());
         osc.start(now);
         osc.stop(now + 0.1);
       } else if (type === "fever") {
@@ -391,7 +440,7 @@
           gain.gain.setValueAtTime(0.2, now + i * 0.06);
           gain.gain.exponentialRampToValueAtTime(0.01, now + i * 0.06 + 0.15);
           osc.connect(gain);
-          gain.connect(audioCtx.destination);
+          gain.connect(seDest());
           osc.start(now + i * 0.06);
           osc.stop(now + i * 0.06 + 0.15);
         });
@@ -404,7 +453,7 @@
         gain.gain.setValueAtTime(0.2, now);
         gain.gain.exponentialRampToValueAtTime(0.01, now + 0.15);
         osc.connect(gain);
-        gain.connect(audioCtx.destination);
+        gain.connect(seDest());
         osc.start(now);
         osc.stop(now + 0.15);
       }
@@ -453,6 +502,7 @@
     const tosserY_Right = 300;
 
     let balls = [];
+    let evts = [];   // ノーツごとの結果 [着く時刻(秒), 0=PERFECT/1=GOOD/2=MISS]（リザルトのミス位置表示用）
 
     // ★ 譜面: 音源(music.mp3)を解析して作成。[手が着く時刻(ms), 手(0=左/A,1=右/L), 軌道(0=ふつう,1=低,2=高,3=超高)]
     //   曲の音量・明るさ・音の密度に合わせて、イントロ/ブレイクダウン/アウトロは疎に、盛り上がりは濃くなっています。
@@ -480,8 +530,8 @@
     // ★ 音源(music.mp3)の解析値: 164.6226 BPM、1拍目は曲頭から約0.156秒
     // ★ 曲リスト。曲ごとに BPM・拍の位置・譜面・ブレイクダウン区間(小節番号)を持つ
     const SONGS = [
-      { id: "usagi", title: "うさぎロケット", file: "usagi_rocket.mp3", bpm: 127.709, offset: 0.4513, travelBeats: 1.5, breakBars: [152, 156], charts: () => (typeof CHARTS_USAGI !== "undefined" ? CHARTS_USAGI : null) },
-      { id: "hakarenai", title: "測れない色", file: "music.mp3", bpm: 164.6226, offset: 0.1563, travelBeats: 2, breakBars: [99, 105], charts: () => (typeof CHARTS_HAKARENAI !== "undefined" ? CHARTS_HAKARENAI : null) }
+      { id: "usagi", title: "うさぎロケット", file: "usagi_rocket.mp3", jacket: "jacket_usagi.jpg", bpm: 127.709, offset: 0.4513, travelBeats: 1.5, breakBars: [152, 156], charts: () => (typeof CHARTS_USAGI !== "undefined" ? CHARTS_USAGI : null) },
+      { id: "hakarenai", title: "測れない色", file: "music.mp3", jacket: "jacket_hakarenai.png", bpm: 164.6226, offset: 0.1563, travelBeats: 2, breakBars: [99, 105], charts: () => (typeof CHARTS_HAKARENAI !== "undefined" ? CHARTS_HAKARENAI : null) }
     ];
     let songIdx = 0;
     try { const sid = localStorage.getItem("popcatch-song-id"); const si = SONGS.findIndex(x => x.id === sid); if (si >= 0) songIdx = si; } catch (e) {}
@@ -515,6 +565,22 @@
         const a = (0.25 + 0.3 * Math.sin(t * 1.4 + i * 1.7)) * lv;
         ctx.fillStyle = `rgba(190,215,255,${Math.max(0, a)})`;
         ctx.beginPath(); ctx.arc(x, y, 1 + (i % 3) * 0.6, 0, 6.283); ctx.fill();
+      }
+      // 流れ星: 時刻から決まる（一時停止しても位置が飛ばない）。細くて控えめ、ボールの下に描く
+      const SLOT = 1.3, DUR = 0.8, rnd = (n) => { const v = Math.sin(n * 12.9898 + 78.233) * 43758.5453; return v - Math.floor(v); };
+      for (let k = Math.floor((t - DUR) / SLOT); k <= Math.floor(t / SLOT); k++) {
+        if (k < 0 || rnd(k + 0.5) < 0.25) continue;          // 約75%のスロットで出現
+        const u = (t - k * SLOT - rnd(k + 1.5) * (SLOT - DUR)) / DUR;
+        if (u < 0 || u > 1) continue;
+        const sx = rnd(k + 2.5) * W * 0.8 + W * 0.15, sy = rnd(k + 3.5) * H * 0.35;
+        const ang = 0.35 + rnd(k + 4.5) * 0.35, len = 150 + rnd(k + 5.5) * 80, dx = Math.cos(ang) * -1, dy = Math.sin(ang);
+        const hx = sx + dx * len * 2.2 * u, hy = sy + dy * len * 2.2 * u;   // 右上→左下へ流れる
+        const fade = Math.sin(Math.PI * u) * lv;
+        const g = ctx.createLinearGradient(hx, hy, hx - dx * len, hy - dy * len);
+        g.addColorStop(0, `rgba(235,245,255,${0.85 * fade})`); g.addColorStop(1, "rgba(160,190,255,0)");
+        ctx.strokeStyle = g; ctx.lineWidth = 1.6; ctx.lineCap = "round";
+        ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx - dx * len, hy - dy * len); ctx.stroke();
+        ctx.fillStyle = `rgba(255,255,255,${0.9 * fade})`; ctx.beginPath(); ctx.arc(hx, hy, 1.8, 0, 6.283); ctx.fill();
       }
       ctx.restore();
     }
@@ -587,10 +653,11 @@
     let lastCT = -1, lastCTperf = 0;
     function getGameTime() {
       const ct = bgm.currentTime;
-      if (bgm.paused || bgm.ended) return ct - offsetMs / 1000;
+      const rate = bgm.playbackRate || 1;
+      if (bgm.paused || bgm.ended) return ct - offsetMs / 1000 * rate;
       const now = performance.now();
       if (ct !== lastCT) { lastCT = ct; lastCTperf = now; }
-      return lastCT + (now - lastCTperf) / 1000 - offsetMs / 1000;
+      return lastCT + (now - lastCTperf) / 1000 * rate - offsetMs / 1000 * rate;
     }
     // ★ ボール位置は「時刻」から計算する（フレームレートに依存しない）
     function ballPos(ball, t) {
@@ -666,13 +733,13 @@
             
             if (diffX < 18) {
               score += (100 + comboBonus) * multiplier;
-              showFeedback("PERFECT!!", "#ff007f"); perfectCount++;
+              showFeedback("PERFECT!!", "#ff007f"); perfectCount++; evts.push([ball.arriveT, 0]);
               playSE("perfect");
               shakeTimer = 5;
               createParticles(hitZoneX, lane.y, "#ff007f", 12);
             } else {
               score += (50 + comboBonus) * multiplier;
-              showFeedback("GOOD!", "#00e676"); goodCount++;
+              showFeedback("GOOD!", "#00e676"); goodCount++; evts.push([ball.arriveT, 1]);
               playSE("good");
               createParticles(hitZoneX, lane.y, "#00e676", 6);
             }
@@ -755,6 +822,69 @@
       });
     }
 
+    // ===================== 練習モード =====================
+    let practice = null;                 // null=通常。練習中は {speed, sb, eb, loop, seek, startSec, endSec, loops}
+    const pr = { speed: 1, sb: 0, eb: 7, loop: true, jumpI: -1 };
+    const barTime = (b) => BEAT_OFFSET + b * BAR;
+    function songMaxBar() {
+      const h = (CHARTS && CHARTS.hard) || [];
+      const last = h.length ? h[h.length - 1][0] / 1000 : 60;
+      return Math.max(1, Math.floor((last - BEAT_OFFSET) / BAR));
+    }
+    const fmtT = (t) => { t = Math.max(0, t); return Math.floor(t / 60) + ":" + String(Math.floor(t % 60)).padStart(2, "0"); };
+    function openPractice() {
+      if (!CHARTS) { alert("譜面ファイルが見つかりません。"); return; }
+      const mb = songMaxBar();
+      pr.sb = Math.min(pr.sb, mb); pr.eb = Math.max(pr.sb, Math.min(pr.eb, mb));
+      const a = document.getElementById("prStart"), b = document.getElementById("prEnd");
+      a.max = b.max = mb;
+      const sp = document.getElementById("prSpeed");
+      if (!sp.children.length) [0.5, 0.75, 0.9, 1].forEach(r => {
+        const x = document.createElement("button"); x.className = "style-btn"; x.dataset.r = r; x.textContent = r + "×";
+        x.onclick = () => { pr.speed = r; prRefresh(); }; sp.appendChild(x);
+      });
+      showView("practice"); prRefresh();
+    }
+    function prRefresh() {
+      document.getElementById("prInfo").textContent = "― " + curSong().title + " / " + ({ easy: "かんたん", normal: "ふつう", hard: "むずかしい" })[difficulty];
+      document.getElementById("prStart").value = pr.sb; document.getElementById("prEnd").value = pr.eb;
+      document.getElementById("prStartVal").textContent = "第" + (pr.sb + 1) + "小節  " + fmtT(barTime(pr.sb));
+      document.getElementById("prEndVal").textContent = "第" + (pr.eb + 1) + "小節  " + fmtT(barTime(pr.eb + 1));
+      document.querySelectorAll("#prSpeed .style-btn").forEach(x => x.classList.toggle("active", Number(x.dataset.r) === pr.speed));
+      const lb = document.getElementById("prLoopBtn"); lb.classList.toggle("active", pr.loop); lb.textContent = pr.loop ? "🔁 ループ ON" : "🔁 ループ OFF";
+    }
+    function prSet(k, v) {
+      v = Number(v);
+      if (k === "s") { pr.sb = v; if (pr.eb < v) pr.eb = v; } else { pr.eb = v; if (pr.sb > v) pr.sb = v; }
+      prRefresh();
+    }
+    function prToggleLoop() { pr.loop = !pr.loop; prRefresh(); }
+    function prJump() {   // 選んだ難易度で「両手同時ノーツ」がある小節へ順に移動
+      const ch = CHARTS[difficulty], seen = {}, bars = [];
+      ch.forEach(n => { const k = n[0]; (seen[k] = seen[k] || []).push(n[1]); });
+      Object.keys(seen).forEach(k => { if (seen[k].length > 1 && seen[k].indexOf(0) >= 0 && seen[k].indexOf(1) >= 0) { const b = Math.floor((k / 1000 - BEAT_OFFSET) / BAR); if (b >= 0 && bars.indexOf(b) < 0) bars.push(b); } });
+      bars.sort((a, b) => a - b);
+      if (!bars.length) { document.getElementById("prInfo").textContent = "― この難易度に同時ノーツはありません"; return; }
+      pr.jumpI = (pr.jumpI + 1) % bars.length;
+      const b = bars[pr.jumpI], mb = songMaxBar();
+      pr.sb = Math.max(0, b - 1); pr.eb = Math.min(mb, b + 2);
+      prRefresh();
+    }
+    function startNormal() { practice = null; startAudioGame(); }
+    function startPractice() {
+      const startSec = barTime(pr.sb), endSec = barTime(pr.eb + 1);
+      practice = { speed: pr.speed, loop: pr.loop, startSec, endSec, loops: 0 };
+      startAudioGame();
+    }
+    function practiceReset() {
+      score = 0; combo = 0; maxCombo = 0; perfectCount = goodCount = missCount = 0;
+      isFever = false; canvas.classList.remove("fever");
+      dropFired = false; dropStart = -99; balls = []; particles = []; evts = [];
+      nextNoteIdx = 0; lastCT = -1;
+      practice.seek = Math.max(0, practice.startSec - travelTime - 1.5);
+      bgm.currentTime = practice.seek;
+    }
+
     function startAudioGame() {
       if (!CHARTS) { alert("譜面ファイル（charts_usagi.js / charts_hakarenai.js）が見つかりません。330.html と同じフォルダに置いてください。"); return; }
       initAudioContext();
@@ -762,7 +892,12 @@
       document.body.classList.remove("m-title", "m-result"); document.body.classList.add("m-play");
       try { if (screen.orientation && screen.orientation.lock && document.body.classList.contains("mobile")) screen.orientation.lock("landscape").catch(() => {}); } catch (e) {}
       
-      bgm.currentTime = 0;
+      const rate = practice ? practice.speed : 1;
+      bgm.defaultPlaybackRate = rate; bgm.playbackRate = rate;
+      try { bgm.preservesPitch = true; bgm.webkitPreservesPitch = true; } catch (e) {}
+      const seek = practice ? Math.max(0, practice.startSec - travelTime - 1.5) : 0;
+      if (practice) practice.seek = seek;
+      bgm.currentTime = seek;
       bgm.play().then(() => {
         isPlaying = true;
         score = 0;
@@ -773,8 +908,11 @@
         dropFired = false; dropStart = -99;
         balls = [];
         particles = [];
-        // 難易度の譜面を読み込み。曲頭すぎて飛行時間が足りないボールは出さない
-        chartNotes = CHARTS[difficulty].filter(n => n[0] / 1000 >= PREP_TIME);
+        evts = [];
+        // 難易度の譜面を読み込み。曲頭すぎて飛行時間が足りないボールは出さない（練習は選んだ区間だけ）
+        chartNotes = practice
+          ? CHARTS[difficulty].filter(n => n[0] / 1000 >= practice.startSec - 0.001 && n[0] / 1000 < practice.endSec)
+          : CHARTS[difficulty].filter(n => n[0] / 1000 >= PREP_TIME);
         nextNoteIdx = 0;
         lastCT = -1;
         schedLoop();
@@ -786,6 +924,7 @@
 
     function resetToTitle() {
       isPlaying = false;
+      bgm.defaultPlaybackRate = 1; bgm.playbackRate = 1;
       score = 0;
       combo = 0;
       maxCombo = 0;
@@ -881,6 +1020,11 @@
       ctx.font = "bold 22px sans-serif";
       ctx.textAlign = "left";
       ctx.fillText(`SCORE: ${score}`, 20, 40);
+      if (practice) {
+        ctx.save(); ctx.textAlign = "right"; ctx.fillStyle = "#ffca28"; ctx.font = "bold 14px sans-serif";
+        ctx.fillText(`🎯 PRACTICE ×${practice.speed}${practice.loop ? "  LOOP " + (practice.loops + 1) : ""}`, canvas.width - 16, 28);
+        ctx.restore();
+      }
 
       if (combo > 1) {
         ctx.save();
@@ -893,7 +1037,7 @@
       }
 
       // 準備時間の表示（最初のボールが出るまで）
-      const prepRemain = PREP_TIME - travelTime - currentTime;
+      const prepRemain = practice ? 0 : PREP_TIME - travelTime - currentTime;
       if (prepRemain > 0) {
         ctx.save();
         ctx.textAlign = "center";
@@ -936,7 +1080,7 @@
           ball.y = pos.y;
 
           if (!ball.passed && ball.x < hitZoneX - 40) {
-            ball.passed = true;
+            ball.passed = true; evts.push([ball.arriveT, 2]);
             resetCombo();
           }
 
@@ -1021,8 +1165,11 @@
 
       ctx.restore();
 
-      // 曲終了処理
-      if (!bgm.ended) {
+      // 曲終了処理（練習モードは選んだ区間の終わりで、ループまたは終了）
+      if (practice && (currentTime > practice.endSec + 1.0 || bgm.ended)) {
+        if (practice.loop) { practice.loops++; practiceReset(); if (bgm.paused) bgm.play().catch(() => {}); schedLoop(); }
+        else startFinish();
+      } else if (!bgm.ended) {
         schedLoop();
       } else {
         startFinish();
@@ -1062,7 +1209,7 @@
         gain.gain.setValueAtTime(0.0001, now + start);
         gain.gain.exponentialRampToValueAtTime(vol, now + start + 0.02);
         gain.gain.exponentialRampToValueAtTime(0.0001, now + start + dur);
-        osc.connect(gain); gain.connect(audioCtx.destination);
+        osc.connect(gain); gain.connect(seDest());
         osc.start(now + start); osc.stop(now + start + dur + 0.05);
       };
       if (kind === "rank") {
@@ -1107,18 +1254,18 @@
       const ap = fc && goodCount === 0;
       let rank = rv >= 0.97 ? "SS" : rv >= 0.92 ? "S" : rv >= 0.80 ? "A" : rv >= 0.60 ? "B" : "C";
       if (rank === "SS" && !fc) rank = "S";      // SSはフルコンボ必須
-      const prev = bestData[bkey(difficulty)];
+      const prev = practice ? null : bestData[bkey(difficulty)];
       const prevScore = prev ? prev.score : 0;
-      const newRecord = score > prevScore;
+      const newRecord = !practice && score > prevScore;
       const nb = prev ? Object.assign({}, prev) : { score: 0, rank: "C", fc: false, ap: false };
       nb.score = Math.max(nb.score, score);
       if (RANK_ORDER.indexOf(rank) > RANK_ORDER.indexOf(nb.rank)) nb.rank = rank;
       nb.fc = nb.fc || fc; nb.ap = nb.ap || ap;
       const rec = { d: difficulty, s: curSong().id, t: Date.now(), score, rank, p: perfectCount, g: goodCount, m: missCount, mc: maxCombo, acc, fc, ap };
       if (newRecord || !prev || !prev.t) { nb.t = rec.t; nb.p = rec.p; nb.g = rec.g; nb.m = rec.m; nb.mc = rec.mc; nb.acc = rec.acc; }
-      bestData[bkey(difficulty)] = nb; saveBest(); renderBest();
-      history.push(rec); saveHistory();
-      finishInfo = { rank, fc, ap, acc, N, newRecord, prevScore, bestRank: nb.rank };
+      if (!practice) { bestData[bkey(difficulty)] = nb; saveBest(); renderBest(); history.push(rec); saveHistory(); }
+      finishInfo = { rank, fc, ap, acc, N, newRecord, prevScore, bestRank: nb.rank, practice: !!practice };
+      bgm.pause(); bgm.defaultPlaybackRate = 1; bgm.playbackRate = 1;
       finishFlags = {};
       fx = [];
       finishStart = performance.now();
@@ -1157,6 +1304,41 @@
         if (p.kind === "spark") { p.vy += p.g * dt; p.x += p.vx * dt; p.y += p.vy * dt; p.vx *= 0.985; }
         else { p.sway += dt * 3; p.x += (p.vx + Math.sin(p.sway) * 30) * dt; p.y += p.vy * dt; p.rot += p.vr * dt; }
       }
+    }
+
+    // ★ ミス位置表示: 曲（練習なら選んだ区間）を横の帯にして、GOOD/MISS の多い場所を色で見せる。◆は両手同時ノーツ
+    function drawMissMap(t) {
+      const a = easeOut((t - 1500) / 500);
+      if (a <= 0 || !chartNotes.length) return;
+      const X0 = 30, X1 = 570, YB = 394, HH = 16;
+      const tmin = chartNotes[0][0] / 1000, tmax = chartNotes[chartNotes.length - 1][0] / 1000, span = Math.max(1, tmax - tmin);
+      const NB = 108, bw = (X1 - X0) / NB;
+      const P = new Array(NB).fill(0), G = new Array(NB).fill(0), M = new Array(NB).fill(0);
+      const seen = {}; chartNotes.forEach(n => { (seen[n[0]] = seen[n[0]] || []).push(n[1]); });
+      const simT = {}; Object.keys(seen).forEach(k => { if (seen[k].indexOf(0) >= 0 && seen[k].indexOf(1) >= 0) simT[k] = 1; });
+      let simAll = 0, simOk = 0;
+      const bi = (sec) => Math.max(0, Math.min(NB - 1, Math.floor((sec - tmin) / span * NB)));
+      evts.forEach(e => {
+        const b = bi(e[0]); if (e[1] === 0) P[b]++; else if (e[1] === 1) G[b]++; else M[b]++;
+        if (simT[Math.round(e[0] * 1000)]) { simAll++; if (e[1] !== 2) simOk++; }
+      });
+      ctx.save(); ctx.globalAlpha = a;
+      ctx.fillStyle = "rgba(255,255,255,0.07)"; ctx.fillRect(X0, YB - HH, X1 - X0, HH);
+      for (let i = 0; i < NB; i++) {
+        const x = X0 + i * bw;
+        if (P[i]) { ctx.fillStyle = "rgba(255,64,129,0.35)"; ctx.fillRect(x, YB - 4, bw - 1, 4); }
+        if (G[i]) { ctx.fillStyle = "#00e676"; ctx.fillRect(x, YB - Math.min(HH - 5, 5 + G[i] * 3), bw - 1, Math.min(HH - 5, 5 + G[i] * 3)); }
+        if (M[i]) { ctx.fillStyle = "#ff5252"; ctx.fillRect(x, YB - Math.min(HH, 7 + M[i] * 3), bw - 1, Math.min(HH, 7 + M[i] * 3)); }
+      }
+      ctx.fillStyle = "#80d8ff";
+      Object.keys(simT).forEach(k => { const x = X0 + (k / 1000 - tmin) / span * (X1 - X0); ctx.beginPath(); ctx.moveTo(x, YB - HH - 7); ctx.lineTo(x + 3, YB - HH - 3); ctx.lineTo(x, YB - HH + 1); ctx.lineTo(x - 3, YB - HH - 3); ctx.closePath(); ctx.fill(); });
+      ctx.font = "bold 11px sans-serif"; ctx.textBaseline = "alphabetic";
+      ctx.textAlign = "left"; ctx.fillStyle = "#a79dc0"; ctx.fillText("ミス位置", X0, YB - HH - 12);
+      ctx.fillStyle = "#ff5252"; ctx.fillText("■MISS", X0 + 52, YB - HH - 12);
+      ctx.fillStyle = "#00e676"; ctx.fillText("■GOOD", X0 + 94, YB - HH - 12);
+      ctx.fillStyle = "#80d8ff"; ctx.fillText("◆同時", X0 + 138, YB - HH - 12);
+      if (simAll) { ctx.textAlign = "right"; ctx.fillStyle = "#80d8ff"; ctx.fillText(`同時ノーツ ${simOk}/${simAll} 成功`, X1, YB - HH - 12); }
+      ctx.restore();
     }
 
     function finishFrame(now) {
@@ -1236,10 +1418,10 @@
       ctx.font = "bold 38px sans-serif";
       ctx.textAlign = "center";
       ctx.shadowColor = "rgba(255,64,129,0.7)"; ctx.shadowBlur = 14;
-      ctx.fillText("FINISH!!", W / 2, 52 - (1 - tIn) * 20);
+      ctx.fillText(info.practice ? "PRACTICE END" : "FINISH!!", W / 2, 52 - (1 - tIn) * 20);
       ctx.shadowBlur = 0;
       ctx.fillStyle = "#b8aecf"; ctx.font = "bold 14px sans-serif";
-      ctx.fillText(`${curSong().title}  ／  DIFFICULTY: ${difficulty.toUpperCase()}`, W / 2, 78);
+      ctx.fillText(`${curSong().title}  ／  DIFFICULTY: ${difficulty.toUpperCase()}` + (practice ? `  ／  ×${practice.speed}` : ""), W / 2, 78);
       ctx.restore();
 
       // ハイスコア表示（スコアのカウントアップが終わってから）
@@ -1259,6 +1441,9 @@
           ctx.shadowColor = "#ff9100"; ctx.shadowBlur = 12;
           ctx.font = "italic 900 20px sans-serif";
           ctx.fillText(info.prevScore ? "★ NEW RECORD! ★" : "★ FIRST RECORD ★", 0, 0);
+        } else if (info.practice) {
+          ctx.fillStyle = "#ffca28"; ctx.font = "bold 13px sans-serif";
+          ctx.fillText("練習モード（記録は保存されません）", 575, 114);
         } else {
           ctx.fillStyle = "#b8aecf"; ctx.font = "bold 13px sans-serif";
           ctx.fillText(`BEST ${info.prevScore.toLocaleString()}  (${info.bestRank})`, 575, 114);
@@ -1288,6 +1473,8 @@
         ctx.restore();
         y += (i === 0 ? 40 : 32);
       });
+
+      drawMissMap(t);
 
       // ランクのスタンプ
       if (t >= T_RANK) {
@@ -1469,7 +1656,7 @@
       const ph = v.h - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom) - 8;
       const k = Math.max(0.3, Math.min(pw / 600, ph / 400));
       canvas.style.width = (600 * k) + "px"; canvas.style.height = (400 * k) + "px";
-      const tb = document.getElementById("titleBg"); tb.style.width = (600 * k) + "px"; tb.style.height = (400 * k) + "px";
+      const tb = document.getElementById("titleBg"); tb.style.width = ((tb.classList.contains("jk") ? 400 : 600) * k) + "px"; tb.style.height = (400 * k) + "px";
     }
     function checkOrientation() {
       if (!isMobile()) return;
@@ -1522,8 +1709,22 @@
     function showView(v) {
       document.body.dataset.view = v; updateFsLabel();
       // 曲選択画面だけ menu.png、それ以外は title.png（menu.png が無ければ title.png のまま）
-      const tb = document.getElementById("titleBg"), want = v === "select" ? "menu.png" : "title.png";
-      if (tb.getAttribute("src") !== want) { tb.dataset.fb = ""; tb.setAttribute("src", want); }
+      updateTitleImg();
+    }
+    // メニューの画像: 曲選択では曲ごとのジャケット → menu.png → title.png の順に探す（無ければ次へ）
+    function titleImgList() {
+      const v = document.body.dataset.view;
+      if (v === "select" || v === "practice") return [curSong().jacket, "menu.png", "title.png"];
+      return ["title.png"];
+    }
+    function updateTitleImg() {
+      const tb = document.getElementById("titleBg"), list = titleImgList();
+      if (tb._list && tb._list.join() === list.join()) return;
+      tb._list = list; tb._i = 0; tb.setAttribute("src", list[0]); tb.classList.toggle("jk", list.length > 1); if (window.fitStage) fitStage();
+    }
+    function titleImgFail() {
+      const tb = document.getElementById("titleBg");
+      if (tb._list && tb._i < tb._list.length - 1) { tb._i++; tb.setAttribute("src", tb._list[tb._i]); tb.classList.remove("jk"); if (window.fitStage) fitStage(); }
     }
     function showResultBtns(v) { document.getElementById("resultBtns").style.display = v ? "flex" : "none"; }
     function backToSelect() { resetToTitle(); showView("select"); }
@@ -1596,6 +1797,7 @@
       document.querySelectorAll(".song-btn").forEach(b => b.classList.toggle("active", Number(b.dataset.i) === i));
       try { localStorage.setItem("popcatch-song-id", sg.id); } catch (e) {}
       renderBest();
+      updateTitleImg();
     }
     function selectSong(i) { if (isPlaying || i === songIdx) return; applySong(i); drawTitleScreen(); }
     (function buildSongButtons() {
@@ -1613,7 +1815,8 @@
     showView("menu");
     renderBest();
     drawTitleScreen();
-  </script>
+    (function () { document.getElementById("volBgm").value = bgmVol; document.getElementById("volSe").value = seVol; setVol("bgm", bgmVol); setVol("se", seVol); })();
+</script>
   <div id="recOverlay"><div id="recBox"></div></div>
 </body>
 </html>
