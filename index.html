@@ -247,7 +247,7 @@
   <h1>ジャグルノーツ 🌟</h1>
   
   <canvas id="gameCanvas" width="600" height="400"></canvas>
-  <img id="titleBg" src="title.png" alt="ジャグルノーツ" onload="document.body.classList.add('has-title-img'); if (window.fitStage) fitStage();">
+  <img id="titleBg" src="title.png" alt="ジャグルノーツ" onerror="if(!this.dataset.fb){this.dataset.fb=1;this.src='title.png';}" onload="document.body.classList.add('has-title-img'); if (window.fitStage) fitStage();">
   
   <div class="controls">
     <div id="menuViews">
@@ -260,7 +260,9 @@
           <button class="main-btn" id="goSelect" onclick="showView('select')">🎵 曲選択へ</button>
           <button class="main-btn sub" id="recBtn" onclick="openRecords()">📊 記録</button>
           <button class="main-btn sub" id="goSettings" onclick="showView('settings')">⚙ 設定</button>
+          <button id="fsBtn" class="main-btn sub fs-only" onclick="toggleFullscreen()">⛶ 全画面にする</button>
         </div>
+        <div class="fs-note">iPhoneは「共有」→「ホーム画面に追加」から開くと全画面で遊べます</div>
       </div>
 
       <!-- ② 曲選択（曲・難易度・ノーツの変化） -->
@@ -299,8 +301,6 @@
           <button class="off-btn" id="calBtn" style="width:auto;padding:6px 14px" onclick="startCalibration()">🎯 タップで自動計測</button>
           <div class="offset-hint" id="calHint">ボールが音より先に着く感じなら「＋」、遅い感じなら「−」</div>
         </div>
-        <button id="fsBtn" class="off-btn fs-only" style="width:auto;padding:6px 14px" onclick="toggleFullscreen()">⛶ 全画面にする</button>
-        <div class="fs-note">iPhoneは「共有」→「ホーム画面に追加」から開くと全画面で遊べます</div>
         <div class="menu-btns"><button class="main-btn sub" onclick="showView('menu')">← メインメニュー</button></div>
       </div>
 
@@ -1519,7 +1519,12 @@
     // ===================== 一時停止・つづける・やり直し・終了 =====================
     let paused = false, resuming = false, countTimer = 0, quitTimer = 0;
     function clearPauseTimers() { clearTimeout(countTimer); clearTimeout(quitTimer); const q = document.getElementById("pQuit"); q.classList.remove("armed"); q.textContent = "🎵 終了して曲選択へ"; }
-    function showView(v) { document.body.dataset.view = v; if (v === "settings") updateFsLabel(); }
+    function showView(v) {
+      document.body.dataset.view = v; updateFsLabel();
+      // 曲選択画面だけ menu.png、それ以外は title.png（menu.png が無ければ title.png のまま）
+      const tb = document.getElementById("titleBg"), want = v === "select" ? "menu.png" : "title.png";
+      if (tb.getAttribute("src") !== want) { tb.dataset.fb = ""; tb.setAttribute("src", want); }
+    }
     function showResultBtns(v) { document.getElementById("resultBtns").style.display = v ? "flex" : "none"; }
     function backToSelect() { resetToTitle(); showView("select"); }
     function pauseGame() {
