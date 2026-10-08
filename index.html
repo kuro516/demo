@@ -293,6 +293,33 @@
     #themePrev i.a::after { content: ""; } #themePrev[data-glyph="1"] i.a::after { content: "左"; } #themePrev[data-glyph="1"] i.b::after { content: "右"; }
     #themePrev span { position: absolute; right: 12px; top: 17px; font-size: 14px; font-weight: bold; color: var(--tx, #fff); letter-spacing: .5px; }
     .set-row { display: flex; flex-wrap: wrap; gap: 6px; justify-content: center; }
+    /* 画面の高さが小さいとき（スマホ横持ちでブラウザのバーが出ている状態）: 余白をつめて、パネルがスクロールなしで収まるようにする */
+    @media (max-height: 360px) {
+      body.mobile .controls { padding: 4px 10px; gap: 3px; }
+      body.mobile .view { gap: 3px; }
+      body.mobile .sec-title { font-size: 10px; margin-bottom: -2px; }
+      body.mobile .song-btn { padding: 3px 10px; font-size: 11px; }
+      body.mobile .song-selector { max-height: 74px; }
+      body.mobile .style-btn { padding: 3px 10px; font-size: 11px; }
+      body.mobile .diff-btn { padding: 3px 8px; font-size: 11px; }
+      body.mobile .main-btn { font-size: 13px !important; padding: 5px 16px !important; }
+      body.mobile .main-btn.sub { font-size: 12px !important; padding: 4px 14px !important; }
+      body.mobile .vol-row, body.mobile .offset-row { font-size: 12px; gap: 6px; }
+      body.mobile .vol-row input[type=range] { width: 120px; }
+      body.mobile #themePrev { height: 30px; width: 150px; }
+      body.mobile #themePrev i { top: 3px; width: 20px; height: 20px; line-height: 14px; font-size: 10px; }
+      body.mobile #themePrev i.a { left: 16px; } body.mobile #themePrev i.b { left: 52px; }
+      body.mobile #themePrev span { top: 6px; font-size: 12px; }
+      body.mobile .off-btn { padding: 2px 10px; }
+      body.mobile .offset-hint { font-size: 10px; margin-top: -2px; }
+      body.mobile #calBtn { padding: 3px 12px !important; font-size: 12px !important; }
+      body.mobile .set-row { gap: 4px; }
+    }
+    @media (max-height: 310px) {
+      body.mobile #themePrev { display: none; }
+      body.mobile .controls { padding: 3px 10px; }
+      body.mobile #viewSettings .main-btn.sub { padding: 3px 14px !important; }
+    }
   </style>
 </head>
 <body data-view="menu">
@@ -1903,8 +1930,17 @@
     // ===================== 一時停止・つづける・やり直し・終了 =====================
     let paused = false, resuming = false, countTimer = 0, quitTimer = 0;
     function clearPauseTimers() { clearTimeout(countTimer); clearTimeout(quitTimer); const q = document.getElementById("pQuit"); q.classList.remove("armed"); q.textContent = "🎵 終了して曲選択へ"; }
+    // 選んでいる曲が見えるよう、曲リストの中だけをスクロールする（scrollIntoViewは外側のパネルまで動かして上が隠れるので使わない）
+    function revealActiveSong() {
+      const lst = document.getElementById("songGroup"), b = lst && lst.querySelector(".song-btn.active");
+      if (!lst || !b || document.body.dataset.view !== "select" || !lst.clientHeight) return;
+      const r = b.getBoundingClientRect(), lr = lst.getBoundingClientRect();
+      if (r.top < lr.top || r.bottom > lr.bottom) lst.scrollTop += r.top - lr.top - (lst.clientHeight - b.offsetHeight) / 2;
+    }
     function showView(v) {
       document.body.dataset.view = v; updateFsLabel();
+      const pn = document.querySelector(".controls"); if (pn) pn.scrollTop = 0;   // 前の画面のスクロール位置を引き継がない（上が隠れる原因）
+      revealActiveSong();
       // 曲選択画面だけ menu.png、それ以外は title.png（menu.png が無ければ title.png のまま）
       updateTitleImg();
     }
@@ -2013,7 +2049,8 @@
       CHARTS = sg.charts();
       scheduleSongLoad();
       lastCT = -1;
-      document.querySelectorAll(".song-btn").forEach(b => { const on = Number(b.dataset.i) === i; b.classList.toggle("active", on); if (on && b.scrollIntoView && document.body.dataset.view === "select") b.scrollIntoView({ block: "nearest" }); });
+      document.querySelectorAll(".song-btn").forEach(b => { const on = Number(b.dataset.i) === i; b.classList.toggle("active", on); if (on) b.dataset.act = "1"; else delete b.dataset.act; });
+      revealActiveSong();
       try { localStorage.setItem("popcatch-song-id", sg.id); } catch (e) {}
       renderBest();
       updateTitleImg();
