@@ -5,15 +5,17 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="description" content="ジャグルノーツ — 横から飛んでくるボールを左右の手でキャッチする音ゲー。『うさぎロケット』『測れない色』を収録。">
+  <meta name="description" content="ジャグルノーツ — 横から飛んでくるボールを左右の手でキャッチする音ゲー。全6曲を収録。">
+  <link rel="canonical" href="https://kuro516.github.io/cat11/">
+  <meta property="og:url" content="https://kuro516.github.io/cat11/">
   <meta property="og:type" content="website">
   <meta property="og:title" content="ジャグルノーツ">
-  <meta property="og:description" content="横から飛んでくるボールを左右の手でキャッチする音ゲー。『うさぎロケット』『測れない色』を収録。スマホ横持ちでも遊べます。">
-  <meta property="og:image" content="title.png">
+  <meta property="og:description" content="横から飛んでくるボールを左右の手でキャッチする音ゲー。全6曲を収録。スマホ横持ちでも遊べます。">
+  <meta property="og:image" content="https://kuro516.github.io/cat11/title.png">
   <meta name="twitter:card" content="summary_large_image">
   <meta name="twitter:title" content="ジャグルノーツ">
   <meta name="twitter:description" content="横から飛んでくるボールを左右の手でキャッチする音ゲー。">
-  <meta name="twitter:image" content="title.png">
+  <meta name="twitter:image" content="https://kuro516.github.io/cat11/title.png">
   
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
   <title>ジャグルノーツ</title>
@@ -67,6 +69,12 @@
     /* 曲リスト: 1行1曲の縦リスト。曲が増えてもここだけスクロールする */
     .song-selector { display: flex; flex-direction: column; gap: 5px; width: min(100%, 380px); max-height: 168px; overflow-y: auto; padding: 2px 4px; box-sizing: border-box; touch-action: pan-y; scrollbar-width: thin; }
     .song-btn { display: flex; align-items: center; justify-content: space-between; gap: 10px; flex: none; text-align: left; padding: 7px 16px; font-size: 14px; font-weight: bold; border: 2px solid #555; background: #222; color: #ccc; border-radius: 16px; cursor: pointer; }
+    .song-btn .st { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .sd { display: inline-flex; gap: 3px; flex: none; } .sd i { width: 8px; height: 8px; border-radius: 50%; background: rgba(128,128,128,.4); }
+    .sd i.p { background: #5c6bc0; } .sd i.fc { background: #ffca28; box-shadow: 0 0 5px #ffca28; }
+    .sd i.ap { background: conic-gradient(#ff4081,#ffca28,#29b6f6,#00e676,#b388ff,#ff4081); box-shadow: 0 0 6px #ff4081; }
+    .bd { display: inline-block; margin-left: 5px; padding: 0 6px; border-radius: 8px; font-size: 10px; line-height: 15px; font-weight: 900; color: #3a2800; background: #ffca28; vertical-align: 1px; }
+    .bd.ap { color: #fff; background: linear-gradient(90deg,#ff4081,#ff9100,#29b6f6,#b388ff); text-shadow: 0 0 2px rgba(0,0,0,.5); }
     .song-btn .sr { font-size: 12px; font-weight: bold; letter-spacing: .3px; opacity: .95; white-space: nowrap; }
     .song-btn.active { border-color: #29b6f6; background: #29b6f6; color: #04202e; box-shadow: 0 0 10px rgba(41,182,246,.45); }
     body.mobile .song-btn { padding: 4px 12px; font-size: 12px; }
@@ -240,6 +248,12 @@
       width: 42px; height: 42px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); background: rgba(20,16,44,.55); color: #fff; font-size: 18px; line-height: 1; cursor: pointer; touch-action: manipulation; padding: 0; }
     body.m-play #pauseBtn { display: block; }
     body.paused #pauseBtn { display: none; }
+    #loadOverlay { display: none; position: fixed; inset: 0; z-index: 45; background: rgba(8,6,22,.82); align-items: center; justify-content: center; flex-direction: column; gap: 14px; text-align: center; padding: 20px; box-sizing: border-box; }
+    body.loading #loadOverlay { display: flex; }
+    #loadMsg { white-space: pre-line; font-size: 18px; font-weight: bold; line-height: 1.6; max-width: 420px; }
+    #loadOverlay .spin { width: 34px; height: 34px; border: 4px solid rgba(255,255,255,.2); border-top-color: #29b6f6; border-radius: 50%; animation: lspin .9s linear infinite; }
+    body.load-err #loadOverlay .spin { display: none; }
+    @keyframes lspin { to { transform: rotate(360deg); } }
     #pauseOverlay { display: none; position: fixed; inset: 0; z-index: 40; background: rgba(8,6,22,.78); align-items: center; justify-content: center; touch-action: manipulation; }
     body.paused #pauseOverlay { display: flex; }
     #pauseOverlay .pbox { background: #1c1740; border: 2px solid #3d3580; border-radius: 16px; padding: 16px 22px; text-align: center; max-width: 92vw; box-sizing: border-box; }
@@ -353,7 +367,8 @@
 
     <!-- リザルト後のボタン -->
     <div id="resultBtns">
-      <button id="retryBtn" class="main-btn" onclick="backToSelect()">🎵 曲選択に戻る</button>
+      <button id="againBtn" class="main-btn" onclick="playAgain()" style="background:#00c853">🔁 もう一度プレイ</button>
+      <button id="retryBtn" class="main-btn sub" onclick="backToSelect()">🎵 曲選択に戻る</button>
       <button id="recBtn2" class="main-btn sub" onclick="openRecords()">📊 記録</button>
     </div>
   </div>
@@ -381,7 +396,7 @@
   <div id="rotateMsg"><div class="ph">📱</div><div>スマホを横向きにしてください</div></div>
 
   <!-- BGM要素 -->
-  <audio id="bgm" src="music.mp3" preload="auto"></audio>
+  <audio id="bgm" preload="none"></audio>
 
   <script src="charts_usagi.js"></script>
   <script src="charts_hakarenai.js"></script>
@@ -486,13 +501,14 @@
       ["easy", "normal", "hard"].forEach((d) => {
         const el = document.getElementById("best-" + d), b = bestData[bkey(d)];
         if (!el) return;
-        el.textContent = b ? `BEST ${b.score.toLocaleString()}  ${b.rank}${b.ap ? " ★AP" : b.fc ? " ★FC" : ""}` : "未プレイ";
+        el.innerHTML = b ? `BEST ${b.score.toLocaleString()}  ${b.rank}${b.ap ? '<span class="bd ap">AP</span>' : b.fc ? '<span class="bd">FC</span>' : ""}` : "未プレイ";
       });
       // 曲リストの各行に、いま選んでいる難易度のベストランクを表示
       document.querySelectorAll(".song-btn").forEach((btn) => {
         const sg = SONGS[Number(btn.dataset.i)], b = bestData[bkey(difficulty, sg)], sr = btn.querySelector(".sr");
         if (!sr) return;
-        sr.textContent = b ? b.rank + (b.ap ? " ★AP" : b.fc ? " ★FC" : "") : "—";
+        sr.innerHTML = b ? b.rank + (b.ap ? '<span class="bd ap">AP</span>' : b.fc ? '<span class="bd">FC</span>' : "") : "—";
+        btn.querySelectorAll(".sd i").forEach((dot, k) => { const x = bestData[bkey(["easy", "normal", "hard"][k], sg)]; dot.className = x ? (x.ap ? "ap" : x.fc ? "fc" : "p") : ""; dot.title = ["EASY", "NORMAL", "HARD"][k]; });
         sr.style.color = btn.classList.contains("active") ? "inherit" : (b ? rankColor(b.rank) : "#777");
       });
     }
@@ -524,7 +540,7 @@
     const tosserY_Right = 300;
 
     let balls = [];
-    let evts = [];   // ノーツごとの結果 [着く時刻(秒), 0=PERFECT/1=GOOD/2=MISS]（リザルトのミス位置表示用）
+    let evts = [];   // ノーツごとの結果 [着く時刻(秒), 0=PERFECT/1=GOOD/2=MISS/3=GREAT]（リザルトのミス位置表示用）
 
     // ★ 譜面: 音源(music.mp3)を解析して作成。[手が着く時刻(ms), 手(0=左/A,1=右/L), 軌道(0=ふつう,1=低,2=高,3=超高)]
     //   曲の音量・明るさ・音の密度に合わせて、イントロ/ブレイクダウン/アウトロは疎に、盛り上がりは濃くなっています。
@@ -764,9 +780,14 @@
               playSE("perfect");
               shakeTimer = 5;
               createParticles(hitZoneX, lane.y, "#ff007f", 12);
+            } else if (diffX < 32) {
+              score += (75 + comboBonus) * multiplier;
+              showFeedback("GREAT!", "#ffb300"); greatCount++; evts.push([ball.arriveT, 3]);
+              playSE("good");
+              createParticles(hitZoneX, lane.y, "#ffb300", 9);
             } else {
               score += (50 + comboBonus) * multiplier;
-              showFeedback("GOOD!", "#00e676"); goodCount++; evts.push([ball.arriveT, 1]);
+              showFeedback("GOOD", "#00e676"); goodCount++; evts.push([ball.arriveT, 1]);
               playSE("good");
               createParticles(hitZoneX, lane.y, "#00e676", 6);
             }
@@ -791,7 +812,7 @@
       }
       playSE("miss");
       missCount++;
-      showFeedback("MISS!", "#aaa");
+      showFeedback("MISS", "#aaa");
     }
 
     function createParticles(x, y, color, count) {
@@ -904,7 +925,7 @@
       startAudioGame();
     }
     function practiceReset() {
-      score = 0; combo = 0; maxCombo = 0; perfectCount = goodCount = missCount = 0;
+      score = 0; combo = 0; maxCombo = 0; perfectCount = greatCount = goodCount = missCount = 0;
       isFever = false; canvas.classList.remove("fever");
       dropFired = {}; dropStart = -99; balls = []; particles = []; evts = [];
       nextNoteIdx = 0; lastCT = -1;
@@ -912,9 +933,15 @@
       bgm.currentTime = practice.seek;
     }
 
+    // 読み込み中表示・失敗表示
+    let starting = false, startCancelled = false, loadSlowTimer = 0;
+    function showLoad(msg, isErr) { document.getElementById("loadMsg").textContent = msg; document.body.classList.add("loading"); document.body.classList.toggle("load-err", !!isErr); document.getElementById("loadBtn").textContent = isErr ? "とじる" : "やめる"; }
+    function hideLoad() { clearTimeout(loadSlowTimer); document.body.classList.remove("loading", "load-err"); }
+    function cancelStart() { startCancelled = true; hideLoad(); try { bgm.pause(); } catch (e) {} }
     function startAudioGame() {
+      if (starting) return;
       if (!CHARTS) { alert("譜面ファイル（charts_*.js）が見つかりません。330.html と同じフォルダに置いてください。"); return; }
-      initAudioContext();
+      initAudioContext(); loadSongAudio(); wlOn();
       showResultBtns(false);
       document.body.classList.remove("m-title", "m-result"); document.body.classList.add("m-play");
       try { if (screen.orientation && screen.orientation.lock && document.body.classList.contains("mobile")) screen.orientation.lock("landscape").catch(() => {}); } catch (e) {}
@@ -924,13 +951,20 @@
       try { bgm.preservesPitch = true; bgm.webkitPreservesPitch = true; } catch (e) {}
       const seek = practice ? Math.max(0, practice.startSec - travelTime - 1.5) : 0;
       if (practice) practice.seek = seek;
-      bgm.currentTime = seek;
+      try { bgm.currentTime = seek; } catch (e) {}
+      starting = true; startCancelled = false;
+      if (bgm.readyState < 3) {
+        showLoad("♪ 曲を読み込み中…");
+        loadSlowTimer = setTimeout(() => showLoad("♪ 読み込みに時間がかかっています…\n通信状態を確認してください"), 8000);
+      }
       bgm.play().then(() => {
+        starting = false; hideLoad();
+        if (startCancelled) { try { bgm.pause(); } catch (e) {} resetToTitle(); return; }
         isPlaying = true;
         score = 0;
         combo = 0;
         maxCombo = 0;
-        perfectCount = goodCount = missCount = 0;
+        perfectCount = greatCount = goodCount = missCount = 0;
         isFever = false;
         dropFired = {}; dropStart = -99;
         balls = [];
@@ -944,18 +978,25 @@
         lastCT = -1;
         schedLoop();
       }).catch(err => {
-        alert("音楽ファイルの読み込みに失敗しました。`music.mp3` の配置を確認してください。");
+        starting = false; const cancelled = startCancelled; hideLoad();
         resetToTitle();
+        if (!cancelled) showLoad("曲を読み込めませんでした。\n通信状態を確認して、もう一度お試しください。", true);
       });
     }
 
+    // 画面スリープ防止: プレイ中（一時停止・リザルト含む）は画面を点けたままにする。非対応ブラウザでは何もしない
+    let wakeLock = null, wantWake = false;
+    async function wlOn() { wantWake = true; try { if (navigator.wakeLock && !wakeLock) { wakeLock = await navigator.wakeLock.request("screen"); wakeLock.addEventListener("release", () => { wakeLock = null; }); } } catch (e) { wakeLock = null; } }
+    function wlOff() { wantWake = false; try { if (wakeLock) wakeLock.release(); } catch (e) {} wakeLock = null; }
+    document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && wantWake) wlOn(); });
     function resetToTitle() {
+      wlOff();
       isPlaying = false;
       bgm.defaultPlaybackRate = 1; bgm.playbackRate = 1;
       score = 0;
       combo = 0;
       maxCombo = 0;
-      perfectCount = goodCount = missCount = 0;
+      perfectCount = greatCount = goodCount = missCount = 0;
       finishActive = false;
       cancelAnimationFrame(finishRaf);
       fx = [];
@@ -1204,7 +1245,7 @@
     }
 
     // ===================== 結果画面（ランク・フルコンボ演出） =====================
-    let perfectCount = 0, goodCount = 0, missCount = 0;
+    let perfectCount = 0, greatCount = 0, goodCount = 0, missCount = 0;
     let finishActive = false, finishStart = 0, finishLast = 0, finishRaf = 0;
     let finishInfo = null, finishFlags = {};
     let fx = [];   // 演出用パーティクル
@@ -1273,13 +1314,13 @@
     function startFinish() {
       isPlaying = false;
       const N = chartNotes.length;
-      const caught = perfectCount + goodCount;
-      const acc = N ? (perfectCount + goodCount * 0.5) / N : 0;
+      const caught = perfectCount + greatCount + goodCount;
+      const acc = N ? (perfectCount + greatCount * 0.75 + goodCount * 0.5) / N : 0;
       const ratio = N ? Math.min(1, score / calcMaxScore(N)) : 0;
       const rv = 0.6 * acc + 0.4 * ratio;
       const fc = N > 0 && missCount === 0 && caught >= N;
-      const ap = fc && goodCount === 0;
-      let rank = rv >= 0.97 ? "SS" : rv >= 0.92 ? "S" : rv >= 0.80 ? "A" : rv >= 0.60 ? "B" : "C";
+      const ap = fc && greatCount === 0 && goodCount === 0;
+      let rank = rv >= 0.975 ? "SS" : rv >= 0.94 ? "S" : rv >= 0.85 ? "A" : rv >= 0.65 ? "B" : "C";   // GREAT判定の追加に合わせて基準を引き上げ
       if (rank === "SS" && !fc) rank = "S";      // SSはフルコンボ必須
       const prev = practice ? null : bestData[bkey(difficulty)];
       const prevScore = prev ? prev.score : 0;
@@ -1288,8 +1329,8 @@
       nb.score = Math.max(nb.score, score);
       if (RANK_ORDER.indexOf(rank) > RANK_ORDER.indexOf(nb.rank)) nb.rank = rank;
       nb.fc = nb.fc || fc; nb.ap = nb.ap || ap;
-      const rec = { d: difficulty, s: curSong().id, t: Date.now(), score, rank, p: perfectCount, g: goodCount, m: missCount, mc: maxCombo, acc, fc, ap };
-      if (newRecord || !prev || !prev.t) { nb.t = rec.t; nb.p = rec.p; nb.g = rec.g; nb.m = rec.m; nb.mc = rec.mc; nb.acc = rec.acc; }
+      const rec = { d: difficulty, s: curSong().id, t: Date.now(), score, rank, p: perfectCount, gr: greatCount, g: goodCount, m: missCount, mc: maxCombo, acc, fc, ap };
+      if (newRecord || !prev || !prev.t) { nb.t = rec.t; nb.p = rec.p; nb.gr = rec.gr; nb.g = rec.g; nb.m = rec.m; nb.mc = rec.mc; nb.acc = rec.acc; }
       if (!practice) { bestData[bkey(difficulty)] = nb; saveBest(); renderBest(); history.push(rec); saveHistory(); }
       finishInfo = { rank, fc, ap, acc, N, newRecord, prevScore, bestRank: nb.rank, practice: !!practice };
       bgm.pause(); bgm.defaultPlaybackRate = 1; bgm.playbackRate = 1;
@@ -1346,7 +1387,7 @@
       let simAll = 0, simOk = 0;
       const bi = (sec) => Math.max(0, Math.min(NB - 1, Math.floor((sec - tmin) / span * NB)));
       evts.forEach(e => {
-        const b = bi(e[0]); if (e[1] === 0) P[b]++; else if (e[1] === 1) G[b]++; else M[b]++;
+        const b = bi(e[0]); if (e[1] === 0 || e[1] === 3) P[b]++; else if (e[1] === 1) G[b]++; else M[b]++;
         if (simT[Math.round(e[0] * 1000)]) { simAll++; if (e[1] !== 2) simOk++; }
       });
       ctx.save(); ctx.globalAlpha = a;
@@ -1483,6 +1524,7 @@
         ["SCORE", Math.floor(score * easeOut((t - T_STAT) / 1200)).toLocaleString(), "#ffffff", 30],
         ["MAX COMBO", String(maxCombo), "#ffea00", 20],
         ["PERFECT", String(perfectCount), "#ff4081", 20],
+        ["GREAT", String(greatCount), "#ffb300", 20],
         ["GOOD", String(goodCount), "#00e676", 20],
         ["MISS", String(missCount), "#9e9e9e", 20],
         ["ACCURACY", (info.acc * 100).toFixed(1) + "%", "#80d8ff", 20]
@@ -1607,14 +1649,15 @@
             <div class="rec-cell"><span>MAX COMBO</span><b style="color:#ffea00">${b.mc != null ? b.mc : "-"}</b></div>
             <div class="rec-cell"><span>ACCURACY</span><b style="color:#80d8ff">${acc}</b></div>
             <div class="rec-cell"><span>PERFECT</span><b style="color:#ff4081">${b.p != null ? b.p : "-"}</b></div>
+            <div class="rec-cell"><span>GREAT</span><b style="color:#ffb300">${b.gr != null ? b.gr : (b.p != null ? 0 : "-")}</b></div>
             <div class="rec-cell"><span>GOOD</span><b style="color:#00e676">${b.g != null ? b.g : "-"}</b></div>
             <div class="rec-cell"><span>MISS</span><b style="color:#9e9e9e">${b.m != null ? b.m : "-"}</b></div>
             <div class="rec-cell"><span>プレイ回数</span><b>${list.length}</b></div>
           </div>
           <div class="rec-sub" style="margin-top:10px;text-align:center">平均スコア ${avg.toLocaleString()} ／ フルコンボ ${fcCount}回</div></div>`;
-        h += '<div class="rec-card"><div class="rec-sub" style="margin-bottom:6px">最近のプレイ（新しい順・最大20件）</div><table class="rec-list"><tr><th>日時</th><th>SCORE</th><th>RANK</th><th>P / G / M</th></tr>';
+        h += '<div class="rec-card"><div class="rec-sub" style="margin-bottom:6px">最近のプレイ（新しい順・最大20件）</div><table class="rec-list"><tr><th>日時</th><th>SCORE</th><th>RANK</th><th>P / GR / G / M</th></tr>';
         list.slice(-20).reverse().forEach(x => {
-          h += `<tr><td>${fmtDate(x.t)}</td><td>${x.score.toLocaleString()}</td><td style="color:${rankColor(x.rank)};font-weight:bold">${x.rank}${x.ap ? " AP" : x.fc ? " FC" : ""}</td><td>${x.p} / ${x.g} / ${x.m}</td></tr>`;
+          h += `<tr><td>${fmtDate(x.t)}</td><td>${x.score.toLocaleString()}</td><td style="color:${rankColor(x.rank)};font-weight:bold">${x.rank}${x.ap ? " AP" : x.fc ? " FC" : ""}</td><td>${x.p} / ${x.gr || 0} / ${x.g} / ${x.m}</td></tr>`;
         });
         h += "</table></div>";
       }
@@ -1643,7 +1686,7 @@
       x.textAlign = "left"; x.fillStyle = "#fff"; x.font = "bold 54px sans-serif";
       x.fillText(b.score.toLocaleString(), 270, 170);
       if (b.fc || b.ap) { x.fillStyle = "#ffca28"; x.font = "italic 900 26px sans-serif"; x.fillText(b.ap ? "ALL PERFECT!!" : "FULL COMBO!!", 272, 210); }
-      const cells = [["MAX COMBO", b.mc, "#ffea00"], ["PERFECT", b.p, "#ff4081"], ["GOOD", b.g, "#00e676"], ["MISS", b.m, "#9e9e9e"], ["ACCURACY", b.acc != null ? (b.acc * 100).toFixed(1) + "%" : "-", "#80d8ff"]];
+      const cells = [["MAX COMBO", b.mc, "#ffea00"], ["PERFECT", b.p, "#ff4081"], ["GREAT", b.gr != null ? b.gr : (b.p != null ? 0 : null), "#ffb300"], ["GOOD", b.g, "#00e676"], ["MISS", b.m, "#9e9e9e"], ["ACCURACY", b.acc != null ? (b.acc * 100).toFixed(1) + "%" : "-", "#80d8ff"]];
       cells.forEach((cl, i) => {
         const cx = 30 + i * 136;
         x.fillStyle = "#120f2e"; x.fillRect(cx, 290, 126, 90);
@@ -1757,6 +1800,16 @@
       if (tb._list && tb._i < tb._list.length - 1) { tb._i++; tb.setAttribute("src", tb._list[tb._i]); tb.classList.remove("jk"); document.body.classList.remove("jk-on"); if (window.fitStage) fitStage(); }
     }
     function showResultBtns(v) { document.getElementById("resultBtns").style.display = v ? "flex" : "none"; }
+    // リザルトからそのままもう一度（同じ曲・難易度。練習モードなら同じ区間・速度）
+    function playAgain() {
+      if (!finishActive || document.getElementById("resultBtns").style.display === "none") return;
+      const wasPractice = !!practice;
+      resetToTitle();
+      if (wasPractice) startPractice(); else startNormal();
+    }
+    window.addEventListener("keydown", (e) => {   // リザルト画面: R / Enter / スペースで即リトライ
+      if (finishActive && !e.repeat && (e.key === "r" || e.key === "R" || e.key === "Enter")) { e.preventDefault(); playAgain(); }
+    });
     function backToSelect() { resetToTitle(); showView("select"); }
     function pauseGame() {
       if (!isPlaying || paused || bgm.ended) return;
@@ -1768,7 +1821,11 @@
       document.getElementById("pauseOverlay").classList.remove("counting");
       document.body.classList.add("paused");
     }
+    // 電話・アラーム・イヤホン抜けなどで曲が止まったら、自動で一時停止にする
+    bgm.addEventListener("pause", () => { if (isPlaying && !paused && !finishActive && !bgm.ended && !starting) pauseGame(); });
+    bgm.addEventListener("error", () => { if (isPlaying) { leaveGameLoop(); resetToTitle(); showLoad("曲の再生中にエラーが起きました。\n通信状態を確認して、もう一度お試しください。", true); } });
     function resumeGame() {
+      try { if (audioCtx && audioCtx.state !== "running") audioCtx.resume(); } catch (e) {}
       if (!paused || resuming) return;
       resuming = true; clearPauseTimers();
       const ov = document.getElementById("pauseOverlay"), cnt = document.getElementById("pauseCount");
@@ -1814,6 +1871,14 @@
     // ===================== 曲の選択 =====================
     function curSong() { return SONGS[songIdx]; }
     function bkey(d, song) { song = song || curSong(); return song.id === "hakarenai" ? d : song.id + ":" + d; }   // 旧バージョンの記録は「測れない色」として引き継ぐ
+    // 曲ファイルは「いま選んでいる1曲」だけ読む。曲を次々切り替えている間は読み込まず、止まって0.5秒後（またはゲーム開始時）に読み込む
+    let songLoadTimer = 0;
+    function loadSongAudio() {
+      clearTimeout(songLoadTimer);
+      const f = SONGS[songIdx].file;
+      if (bgm.getAttribute("src") !== f || bgm.error) { bgm.preload = "auto"; bgm.src = f; bgm.load(); }
+    }
+    function scheduleSongLoad() { clearTimeout(songLoadTimer); songLoadTimer = setTimeout(loadSongAudio, 500); }
     function applySong(i) {
       songIdx = i;
       const sg = SONGS[i];
@@ -1822,7 +1887,7 @@
       BAR = beatInterval * 4;
       BREAKS = (Array.isArray(sg.breakBars[0]) ? sg.breakBars : [sg.breakBars]).map(b => [BEAT_OFFSET + b[0] * BAR, BEAT_OFFSET + b[1] * BAR]);
       CHARTS = sg.charts();
-      bgm.src = sg.file; bgm.load();
+      scheduleSongLoad();
       lastCT = -1;
       document.querySelectorAll(".song-btn").forEach(b => { const on = Number(b.dataset.i) === i; b.classList.toggle("active", on); if (on && b.scrollIntoView && document.body.dataset.view === "select") b.scrollIntoView({ block: "nearest" }); });
       try { localStorage.setItem("popcatch-song-id", sg.id); } catch (e) {}
@@ -1834,7 +1899,7 @@
       const g = document.getElementById("songGroup");
       SONGS.forEach((sg, i) => {
         const b = document.createElement("button");
-        b.className = "song-btn"; b.dataset.i = String(i); b.innerHTML = '<span class="st"></span><span class="sr"></span>'; b.firstChild.textContent = "♪ " + sg.title;
+        b.className = "song-btn"; b.dataset.i = String(i); b.innerHTML = '<span class="st"></span><span class="sd"><i></i><i></i><i></i></span><span class="sr"></span>'; b.firstChild.textContent = "♪ " + sg.title;
         b.onclick = () => selectSong(i);
         g.appendChild(b);
       });
@@ -1851,6 +1916,7 @@
     })();
     (function () { var vb = document.getElementById("volBgm"); if (vb) vb.value = bgmVol; document.getElementById("volSe").value = seVol; if (vb) setVol("bgm", bgmVol); setVol("se", seVol); })();
 </script>
+  <div id="loadOverlay"><div class="spin"></div><div id="loadMsg"></div><button class="main-btn sub" id="loadBtn" onclick="cancelStart()">やめる</button></div>
   <div id="recOverlay"><div id="recBox"></div></div>
 </body>
 </html>
