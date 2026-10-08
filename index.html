@@ -502,14 +502,7 @@
     const hex2rgb = (h) => [1, 3, 5].map(i => parseInt(h.substr(i, 2), 16));
     const rgbaOf = (h, a) => { const c = hex2rgb(h); return `rgba(${c[0]},${c[1]},${c[2]},${a})`; };
     const mixHex = (a, b, t) => { const x = hex2rgb(a), y = hex2rgb(b); return "#" + x.map((v, i) => Math.round(v + (y[i] - v) * t).toString(16).padStart(2, "0")).join(""); };
-    // ライトテーマは、ブレイクダウンで画面が夜色に暗くなる間だけ、文字やボールの色をミッドナイト側へ滑らかに寄せる（暗い所で見えなくならないように）
-    function themeAt(lv) {
-      if (themeId !== "light" || lv <= 0) return TH;
-      const N = THEMES.midnight, o = Object.assign({}, TH);
-      ["text", "sub", "lane", "hit", "tosser", "L", "R", "stroke", "on", "combo", "fever"].forEach(k => { o[k] = mixHex(TH[k], N[k], lv); });
-      o.fb = {}; Object.keys(TH.fb).forEach(k => { o.fb[k] = mixHex(TH.fb[k], N.fb[k], lv); });
-      return o;
-    }
+    function themeAt(lv) { return TH; }   // 夜の演出中も、選んだテーマの色のまま（ライトは明るいまま淡い夜色に変わる）
     function setTheme(id) {
       if (!THEMES[id]) return;
       themeId = id; TH = THEMES[id]; document.body.dataset.theme = id;
@@ -742,15 +735,16 @@
       const W = canvas.width, H = canvas.height, lv = breakLevel(t);
       if (lv <= 0) return;
       ctx.save();
-      // 暗転（青みがかった夜）
-      ctx.fillStyle = `rgba(6,10,38,${0.62 * lv})`;
+      // 暗転（青みがかった夜）。ライトテーマは画面を暗くせず、淡い藍色に染めて星を濃い色で描く
+      const lt = themeId === "light";
+      ctx.fillStyle = lt ? `rgba(92,110,185,${0.30 * lv})` : `rgba(6,10,38,${0.62 * lv})`;
       ctx.fillRect(-10, -10, W + 20, H + 20);
       // ゆっくり流れる星
       for (let i = 0; i < 46; i++) {
         const x = ((i * 97.3 + 40 - t * (6 + (i % 5) * 3)) % (W + 20) + (W + 20)) % (W + 20) - 10;
         const y = (i * 53.7 + 11) % H;
         const a = (0.25 + 0.3 * Math.sin(t * 1.4 + i * 1.7)) * lv;
-        ctx.fillStyle = `rgba(190,215,255,${Math.max(0, a)})`;
+        ctx.fillStyle = lt ? `rgba(40,55,130,${Math.max(0, a * 1.5)})` : `rgba(190,215,255,${Math.max(0, a)})`;
         ctx.beginPath(); ctx.arc(x, y, 1 + (i % 3) * 0.6, 0, 6.283); ctx.fill();
       }
       // 流れ星: 時刻から決まる（一時停止しても位置が飛ばない）。細くて控えめ、ボールの下に描く
@@ -764,10 +758,10 @@
         const hx = sx + dx * len * 2.2 * u, hy = sy + dy * len * 2.2 * u;   // 右上→左下へ流れる
         const fade = Math.sin(Math.PI * u) * lv;
         const g = ctx.createLinearGradient(hx, hy, hx - dx * len, hy - dy * len);
-        g.addColorStop(0, `rgba(235,245,255,${0.85 * fade})`); g.addColorStop(1, "rgba(160,190,255,0)");
+        if (lt) { g.addColorStop(0, `rgba(35,50,125,${0.85 * fade})`); g.addColorStop(1, "rgba(80,100,180,0)"); } else { g.addColorStop(0, `rgba(235,245,255,${0.85 * fade})`); g.addColorStop(1, "rgba(160,190,255,0)"); }
         ctx.strokeStyle = g; ctx.lineWidth = 1.6; ctx.lineCap = "round";
         ctx.beginPath(); ctx.moveTo(hx, hy); ctx.lineTo(hx - dx * len, hy - dy * len); ctx.stroke();
-        ctx.fillStyle = `rgba(255,255,255,${0.9 * fade})`; ctx.beginPath(); ctx.arc(hx, hy, 1.8, 0, 6.283); ctx.fill();
+        ctx.fillStyle = lt ? `rgba(30,45,120,${0.9 * fade})` : `rgba(255,255,255,${0.9 * fade})`; ctx.beginPath(); ctx.arc(hx, hy, 1.8, 0, 6.283); ctx.fill();
       }
       ctx.restore();
     }
@@ -1282,7 +1276,7 @@
         ctx.fillStyle = feedbackColor === "fv" ? th.fever : (th.fb[feedbackColor] || feedbackColor);
         ctx.font = "bold 34px sans-serif";
         ctx.textAlign = "center";
-        ctx.fillText(feedback, canvas.width / 2 + 90, 75);   // 左上のコンボ表示(FEVER含む)と重ならない位置
+        ctx.fillText(feedback, canvas.width * 0.75, 75);   // 左上のコンボ表示(FEVER含む)と重ならない位置
         feedbackTimer--;
       }
 
