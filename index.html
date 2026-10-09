@@ -253,6 +253,17 @@
       width: 42px; height: 42px; border-radius: 50%; border: 2px solid rgba(255,255,255,.35); background: rgba(20,16,44,.55); color: #fff; font-size: 18px; line-height: 1; cursor: pointer; touch-action: manipulation; padding: 0; }
     body.m-play #pauseBtn { display: block; }
     body.paused #pauseBtn { display: none; }
+    #tutOverlay { display: none; position: fixed; inset: 0; z-index: 46; background: rgba(8,6,22,.98); align-items: center; justify-content: center; flex-direction: column; gap: 10px; text-align: center; padding: 12px; box-sizing: border-box; color: #fff; }
+    body.tutorial #tutOverlay { display: flex; }
+    #tutOverlay h2 { margin: 0; font-size: 18px; }
+    #tutOverlay svg { width: min(92vw, 420px); max-height: 38vh; height: auto; }
+    #tutOverlay .tut-txt { font-size: 14px; line-height: 1.6; color: #d8d0ee; }
+    #tutOverlay .tut-txt b.l { color: #4fc3f7; } #tutOverlay .tut-txt b.r { color: #ff7a7a; }
+    #tutOverlay .tut-pc, #tutOverlay .tut-tc { display: none; }
+    body:not(.touch-dev) #tutOverlay .tut-pc { display: block; } body.touch-dev #tutOverlay .tut-tc { display: block; }
+    @keyframes tutball { 0% { transform: translateX(0); opacity: 0; } 12% { opacity: 1; } 85% { opacity: 1; } 100% { transform: translateX(-250px); opacity: 0; } }
+    #tutOverlay .tb { animation: tutball 2.2s linear infinite; }
+    #tutOverlay .tb.b2 { animation-delay: 1.1s; }
     #loadOverlay { display: none; position: fixed; inset: 0; z-index: 45; background: rgba(8,6,22,.82); align-items: center; justify-content: center; flex-direction: column; gap: 14px; text-align: center; padding: 20px; box-sizing: border-box; }
     body.loading #loadOverlay { display: flex; }
     #loadMsg { white-space: pre-line; font-size: 18px; font-weight: bold; line-height: 1.6; max-width: 420px; }
@@ -694,9 +705,16 @@
     let noteStyle = "normal";
     try { const ns = localStorage.getItem("popcatch-notestyle"); if (STYLE_DESC[ns]) noteStyle = ns; } catch (e) {}
     const WILD_ARCS = ["superHigh", "low", "high", "superHigh", "low", "normal", "superHigh", "low", "high", "low", "superHigh"];   // 山なりの高さだけを大きく入れ替える（ジャグリングらしさを保つ）
+    // 両手同時のノーツは、左右とも同じ高さの山なりにそろえる（高さが違うと、飛ぶ途中で左右のボールが交差して重なるため）
+    let simTimes = new Set();
+    function rebuildSimTimes() {
+      const seen = {}; simTimes = new Set();
+      chartNotes.forEach(n => { (seen[n[0]] = seen[n[0]] || []).push(n[1]); });
+      Object.keys(seen).forEach(k => { if (seen[k].length > 1) simTimes.add(Number(k)); });
+    }
     function arcForNote(n) {
       if (noteStyle === "fixed") return "normal";
-      if (noteStyle === "wild") return WILD_ARCS[((Math.imul(n[0], 2654435761) ^ Math.imul(n[1] + 1, 40503)) >>> 0) % WILD_ARCS.length];
+      if (noteStyle === "wild") return WILD_ARCS[((Math.imul(n[0], 2654435761) ^ Math.imul((simTimes.has(n[0]) ? 0 : n[1]) + 1, 40503)) >>> 0) % WILD_ARCS.length];
       return ARC_NAMES[n[2]];
     }
     function setNoteStyle(st) {
@@ -1083,8 +1101,80 @@
     function showLoad(msg, isErr) { document.getElementById("loadMsg").textContent = msg; document.body.classList.add("loading"); document.body.classList.toggle("load-err", !!isErr); document.getElementById("loadBtn").textContent = isErr ? "とじる" : "やめる"; }
     function hideLoad() { clearTimeout(loadSlowTimer); document.body.classList.remove("loading", "load-err"); }
     function cancelStart() { startCancelled = true; hideLoad(); try { bgm.pause(); } catch (e) {} }
+    // あそびかたのアニメ: ゲームと同じ山なりの軌道でボールを飛ばす。実際にキー/タップで試せる
+    let tutRaf = 0, tutS = { h: 0, t: 0 }, tutRes = null, tutTried = false;
+    const TUT_CYC = 2600, TUT_FLY = 1900;
+    function tutPress(hand) {
+      if (!document.body.classList.contains("tutorial")) return;
+      const now = performance.now(), d = tutS.t - TUT_FLY;
+      let txt, col, ok = false;
+      if (hand !== tutS.h) { txt = tutS.h ? "いまは赤！ （L / 右）" : "いまは青！ （A / 左）"; col = "#ffd54f"; }
+      else if (Math.abs(d) < 130) { txt = "PERFECT!"; col = "#ffd54f"; ok = true; }
+      else if (Math.abs(d) < 260) { txt = "GOOD!"; col = "#81c784"; ok = true; }
+      else { txt = d < 0 ? "ちょっと早い！" : "ちょっと遅い！"; col = "#b8aecf"; }
+      tutTried = true; tutRes = { txt, col, hand, ok, at: now };
+      try { if (typeof playSE === "function" && ok) { initAudioContext(); playSE(Math.abs(d) < 130 ? "perfect" : "good"); } } catch (e) {}
+    }
+    window.addEventListener("keydown", (e) => {
+      if (!document.body.classList.contains("tutorial") || e.repeat) return;
+      const k = e.key.toLowerCase();
+      if (k === "a") tutPress(0); else if (k === "l" || k === "j") tutPress(1);
+    }, true);
+    window.addEventListener("pointerdown", (e) => {
+      if (!document.body.classList.contains("tutorial") || (e.target.closest && e.target.closest("button"))) return;
+      tutPress(e.clientX < window.innerWidth / 2 ? 0 : 1);
+    }, true);
+    function tutAnim() {
+      cancelAnimationFrame(tutRaf); tutRes = null; tutTried = false;
+      const $ = (id) => document.getElementById(id);
+      const ball = $("tBall"), fx = $("tFx");
+      const cfg = [{ y: 50, H: 30, c: "#4fc3f7", L: "押す！（A）" }, { y: 125, H: 34, c: "#ff7a7a", L: "押す！（L）" }];
+      let t0 = -1;
+      function frame(now) {
+        if (!document.body.classList.contains("tutorial")) return;
+        if (t0 < 0) t0 = now;
+        const k = Math.floor((now - t0) / TUT_CYC), h = k % 2, c = cfg[h], t = (now - t0) % TUT_CYC;
+        tutS = { h, t };
+        [0, 1].forEach(i => { $("tFill" + i).setAttribute("opacity", 0); $("tRing" + i).setAttribute("stroke-width", 3); });
+        fx.setAttribute("opacity", 0);
+        if (t < TUT_FLY) {
+          const u = t / TUT_FLY;
+          ball.setAttribute("cx", 390 + (60 - 390) * u);
+          ball.setAttribute("cy", c.y - 4 * c.H * u * (1 - u));
+          ball.setAttribute("fill", c.c); ball.setAttribute("opacity", 1);
+          if (u > 0.82) $("tRing" + h).setAttribute("stroke-width", 5);
+        } else {
+          const w = (t - TUT_FLY) / (TUT_CYC - TUT_FLY);
+          ball.setAttribute("opacity", 0);
+          if (!tutTried) {   // まだ試していない間はお手本を見せる
+            $("tFill" + h).setAttribute("opacity", Math.max(0, 0.85 - w));
+            fx.textContent = c.L; fx.setAttribute("fill", c.c); fx.setAttribute("y", h ? 100 : 90);
+            fx.setAttribute("opacity", Math.max(0, 1 - w * 0.8));
+          }
+        }
+        if (tutRes) {
+          const age = now - tutRes.at;
+          if (age < 900) {
+            const r = tutRes;
+            if (r.ok) $("tFill" + r.hand).setAttribute("opacity", Math.max(0, 0.85 - age / 600));
+            fx.textContent = r.txt; fx.setAttribute("fill", r.col); fx.setAttribute("y", 88);
+            fx.setAttribute("opacity", Math.max(0, 1 - age / 1100));
+          }
+        }
+        tutRaf = requestAnimationFrame(frame);
+      }
+      tutRaf = requestAnimationFrame(frame);
+    }
+    // 初回だけのあそびかた表示（2回目以降は出ない）
+    function tutSeen() { try { return localStorage.getItem("popcatch-tutorial") === "1"; } catch (e) { return false; } }
+    function tutDone() { try { localStorage.setItem("popcatch-tutorial", "1"); } catch (e) {} document.body.classList.remove("tutorial"); startAudioGame(); }
+    window.addEventListener("keydown", (e) => {
+      if (!document.body.classList.contains("tutorial")) return;
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); e.stopImmediatePropagation(); tutDone(); }
+    }, true);
     function startAudioGame() {
       if (starting) return;
+      if (!practice && !tutSeen()) { document.body.classList.toggle("touch-dev", !!isTouchDevice); document.body.classList.add("tutorial"); tutAnim(); return; }
       if (!CHARTS) { alert("譜面ファイル（charts_*.js）が見つかりません。330.html と同じフォルダに置いてください。"); return; }
       initAudioContext(); loadSongAudio(); wlOn();
       showResultBtns(false);
@@ -1119,6 +1209,7 @@
         chartNotes = practice
           ? CHARTS[difficulty].filter(n => n[0] / 1000 >= practice.startSec - 0.001 && n[0] / 1000 < practice.endSec)
           : CHARTS[difficulty].filter(n => n[0] / 1000 >= PREP_TIME);
+        rebuildSimTimes();
         nextNoteIdx = 0;
         lastCT = -1;
         schedLoop();
@@ -1287,7 +1378,7 @@
 
 
       // ボール移動＆描画
-      balls.forEach((ball) => {
+      balls.slice().reverse().forEach((ball) => {   // 先に手元に着くボールを一番上に描く（重なっても次に取るボールが隠れない）
         if (!ball.caught) {
           const pos = ballPos(ball, currentTime);
           ball.x = pos.x;
@@ -2082,6 +2173,25 @@
     })();
     (function () { var vb = document.getElementById("volBgm"); if (vb) vb.value = bgmVol; document.getElementById("volSe").value = seVol; if (vb) setVol("bgm", bgmVol); setVol("se", seVol); })();
 </script>
+  <div id="tutOverlay"><h2>あそびかた</h2>
+    <svg id="tutSvg" viewBox="0 0 420 170" aria-hidden="true">
+      <rect x="0" y="0" width="420" height="170" rx="12" fill="rgba(255,255,255,.05)"/>
+      <rect x="378" y="36" width="24" height="30" rx="4" fill="#6b6488"/><rect x="378" y="110" width="24" height="30" rx="4" fill="#6b6488"/>
+      <circle id="tRing0" cx="60" cy="50" r="24" fill="none" stroke="#4fc3f7" stroke-width="3" stroke-dasharray="5 4"/>
+      <circle id="tRing1" cx="60" cy="125" r="24" fill="none" stroke="#ff7a7a" stroke-width="3" stroke-dasharray="5 4"/>
+      <circle id="tFill0" cx="60" cy="50" r="24" fill="#4fc3f7" opacity="0"/>
+      <circle id="tFill1" cx="60" cy="125" r="24" fill="#ff7a7a" opacity="0"/>
+      <text x="60" y="55" text-anchor="middle" font-size="15" font-weight="bold" fill="#fff">A</text>
+      <text x="60" y="130" text-anchor="middle" font-size="15" font-weight="bold" fill="#fff">L</text>
+      <circle id="tBall" cx="390" cy="50" r="13" fill="#4fc3f7" opacity="0"/>
+      <text id="tFx" x="210" y="88" text-anchor="middle" font-size="16" font-weight="bold" fill="#ffd54f" opacity="0">PERFECT!</text>
+    </svg>
+    <div class="tut-txt">ボールが <b>輪に届いた瞬間</b> に押そう！ （ためしに押してみてね）</div>
+    <div class="tut-txt tut-pc"><b class="l">青</b> は <b class="l">Aキー</b>（左手）／ <b class="r">赤</b> は <b class="r">Lキー</b>（右手）</div>
+    <div class="tut-txt tut-tc"><b class="l">青</b> は <b class="l">画面の左半分</b> ／ <b class="r">赤</b> は <b class="r">画面の右半分</b> をタップ</div>
+    <div class="tut-txt" style="font-size:12px;color:#a69cc4">ピッタリでなくてもOK。まずは気楽に遊んでみてね</div>
+    <button class="main-btn" id="tutGo" onclick="tutDone()">はじめる</button>
+  </div>
   <div id="loadOverlay"><div class="spin"></div><div id="loadMsg"></div><button class="main-btn sub" id="loadBtn" onclick="cancelStart()">やめる</button></div>
   <div id="recOverlay"><div id="recBox"></div></div>
 </body>
