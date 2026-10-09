@@ -362,7 +362,7 @@
         <div class="fs-note">iPhoneは「共有」→「ホーム画面に追加」から開くと全画面で遊べます</div>
       </div>
 
-      <!-- ② 曲選択（曲・難易度・ノーツの変化） -->
+      <!-- ② 曲選択（曲・難易度・ノーツのパターン） -->
       <div class="view" id="viewSelect">
         <div class="sec-title">曲</div>
         <div class="song-selector" id="songGroup"></div>
@@ -372,11 +372,11 @@
           <button class="diff-btn" data-d="normal" onclick="setDifficulty('normal')">🎵 ふつう<small class="best" id="best-normal"></small></button>
           <button class="diff-btn" data-d="hard" onclick="setDifficulty('hard')">🔥 むずかしい<small class="best" id="best-hard"></small></button>
         </div>
-        <div class="sec-title">ノーツの変化</div>
+        <div class="sec-title">ノーツのパターン</div>
         <div class="style-selector" id="styleGroup">
           <button class="style-btn" data-s="fixed" onclick="setNoteStyle('fixed')">固定</button>
-          <button class="style-btn active" data-s="normal" onclick="setNoteStyle('normal')">そこそこ</button>
-          <button class="style-btn" data-s="wild" onclick="setNoteStyle('wild')">多様</button>
+          <button class="style-btn active" data-s="normal" onclick="setNoteStyle('normal')">ノーマル</button>
+          <button class="style-btn" data-s="wild" onclick="setNoteStyle('wild')">ダイナミック</button>
         </div>
         <div class="style-desc" id="styleDesc"></div>
         <div class="menu-btns">
@@ -700,21 +700,30 @@
     //   曲の音量・明るさ・音の密度に合わせて、イントロ/ブレイクダウン/アウトロは疎に、盛り上がりは濃くなっています。
     let CHARTS = null;   // 譜面は charts_*.js から読み込む
     const ARC_NAMES = ["normal", "low", "high", "superHigh"];
-    // ★ ノーツの変化: fixed=すべて中くらいの高さ / normal=譜面どおり / wild=高さの変化が激しい
-    const STYLE_DESC = { fixed: "すべてのノーツが中くらいの高さで出ます", normal: "ほどよく高さが変わります（標準）", wild: "高い山なりと低い山なりが大きく入れ替わります" };
+    // ★ ノーツのパターン: fixed=すべて中くらいの高さ / normal=譜面どおり / wild=高さの変化が激しい
+    const STYLE_DESC = { fixed: "すべてのノーツが中くらいの高さで出ます", normal: "ほどよく高さが変わります（標準）", wild: "ふつう・高い・とても高い山なりが大きく入れ替わります" };
     let noteStyle = "normal";
     try { const ns = localStorage.getItem("popcatch-notestyle"); if (STYLE_DESC[ns]) noteStyle = ns; } catch (e) {}
-    const WILD_ARCS = ["superHigh", "low", "high", "superHigh", "low", "normal", "superHigh", "low", "high", "low", "superHigh"];   // 山なりの高さだけを大きく入れ替える（ジャグリングらしさを保つ）
-    // 両手同時のノーツは、左右とも同じ高さの山なりにそろえる（高さが違うと、飛ぶ途中で左右のボールが交差して重なるため）
-    let simTimes = new Set();
+    // ダイナミック: 高さの種類を偏らせず、同じ高さが続かないように時刻順に割り当てる（低い山なりは使わない。ほぼ直線で単調に見えやすいため）
+    const WILD_POOL = ["superHigh", "high", "normal"];
+    let simTimes = new Set(), wildMap = new Map();
     function rebuildSimTimes() {
-      const seen = {}; simTimes = new Set();
+      const seen = {}; simTimes = new Set(); wildMap = new Map();
       chartNotes.forEach(n => { (seen[n[0]] = seen[n[0]] || []).push(n[1]); });
       Object.keys(seen).forEach(k => { if (seen[k].length > 1) simTimes.add(Number(k)); });
+      // 両手同時のノーツは、左右とも同じ高さにそろえる（高さが違うと、飛ぶ途中で左右のボールが交差して重なるため）
+      let prev = "", cnt = { superHigh: 0, high: 0, normal: 0 };
+      Object.keys(seen).map(Number).sort((a, b) => a - b).forEach(t => {
+        const h = (Math.imul(t, 2654435761) >>> 0);
+        const cand = WILD_POOL.filter(a => a !== prev);
+        const minC = Math.min(...cand.map(a => cnt[a])), pool = cand.filter(a => cnt[a] <= minC + 1);   // 出た回数が少ない高さを優先して偏りを防ぐ
+        const arc = pool[(h >>> 7) % pool.length];
+        wildMap.set(t, arc); cnt[arc]++; prev = arc;
+      });
     }
     function arcForNote(n) {
       if (noteStyle === "fixed") return "normal";
-      if (noteStyle === "wild") return WILD_ARCS[((Math.imul(n[0], 2654435761) ^ Math.imul((simTimes.has(n[0]) ? 0 : n[1]) + 1, 40503)) >>> 0) % WILD_ARCS.length];
+      if (noteStyle === "wild") return wildMap.get(n[0]) || "normal";
       return ARC_NAMES[n[2]];
     }
     function setNoteStyle(st) {
