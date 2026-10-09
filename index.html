@@ -704,26 +704,78 @@
     const STYLE_DESC = { fixed: "すべてのノーツが中くらいの高さで出ます", normal: "ほどよく高さが変わります（標準）", wild: "ふつう・高い・とても高い山なりが大きく入れ替わります" };
     let noteStyle = "normal";
     try { const ns = localStorage.getItem("popcatch-notestyle"); if (STYLE_DESC[ns]) noteStyle = ns; } catch (e) {}
-    // ダイナミック: 高さの種類を偏らせず、同じ高さが続かないように時刻順に割り当てる（低い山なりは使わない。ほぼ直線で単調に見えやすいため）
+    // ダイナミック: 高さが極端に入れ替わるように割り当てる（ふつう↔とても高い の落差を多めに。低い山なりは使わない）
     const WILD_POOL = ["superHigh", "high", "normal"];
+    const ARC_K = { low: 6, normal: 14, high: 22, superHigh: 32 };   // spawnBeatBall の重力係数と同じ
     let simTimes = new Set(), wildMap = new Map();
     function rebuildSimTimes() {
       const seen = {}; simTimes = new Set(); wildMap = new Map();
       chartNotes.forEach(n => { (seen[n[0]] = seen[n[0]] || []).push(n[1]); });
       Object.keys(seen).forEach(k => { if (seen[k].length > 1) simTimes.add(Number(k)); });
-      // 両手同時のノーツは、左右とも同じ高さにそろえる（高さが違うと、飛ぶ途中で左右のボールが交差して重なるため）
+      // 1) 時刻順に割り当て: 直前が「ふつう」「とても高い」なら、反対の極端な高さを約2/3で選ぶ。直前が「高い」なら少ないほうの極端を選ぶ
       let prev = "", cnt = { superHigh: 0, high: 0, normal: 0 };
       Object.keys(seen).map(Number).sort((a, b) => a - b).forEach(t => {
         const h = (Math.imul(t, 2654435761) >>> 0);
-        const cand = WILD_POOL.filter(a => a !== prev);
-        const minC = Math.min(...cand.map(a => cnt[a])), pool = cand.filter(a => cnt[a] <= minC + 1);   // 出た回数が少ない高さを優先して偏りを防ぐ
-        const arc = pool[(h >>> 7) % pool.length];
-        wildMap.set(t, arc); cnt[arc]++; prev = arc;
+        let arcL;
+        if (prev === "normal" || prev === "superHigh") {
+          const far = prev === "normal" ? "superHigh" : "normal";
+          arcL = ((h >>> 9) % 3 !== 0) ? far : "high";
+        } else if (prev === "high") arcL = cnt.normal < cnt.superHigh ? "normal" : (cnt.normal > cnt.superHigh ? "superHigh" : ((h >>> 9) % 2 ? "normal" : "superHigh"));
+        else arcL = WILD_POOL[(h >>> 9) % 3];
+        let arcR = arcL;
+        if (simTimes.has(t)) {   // 同時押しの左右は必ず別の高さ
+          const others = WILD_POOL.filter(a => a !== arcL);
+          arcR = others[(Math.imul(h, 69069) >>> 18) % others.length];
+        }
+        wildMap.set(t + ":0", arcL); wildMap.set(t + ":1", arcR); cnt[arcL]++; prev = arcL;
       });
+      // 2) 飛行中に左右のボールがぶつかる組み合わせ（ほぼ同時の左右のノーツ）を見つけたら、高さを直す
+      fixWildOverlaps();
+    }
+    function wildBallsOverlap(a, b, T, F) {
+      // a, b = {t(秒), h(手), k(重力係数)}。2つのボールが同時に飛んでいる間に、中心間距離が 36px(半径18×2) 未満になるか
+      const t0 = Math.max(a.t, b.t) - T, t1 = Math.min(a.t, b.t);
+      for (let i = 0; i <= 24; i++) {
+        const tau = t0 + (t1 - t0) * i / 24, p = [a, b].map(n => {
+          const u = (tau - (n.t - T)) / T, f = u * F, g = n.k / F, sy = n.h ? 300 : 180, vy = (0 - 0.5 * g * F * F) / F;
+          return [520 - 380 * u, sy + vy * f + 0.5 * g * f * f];
+        });
+        if (Math.hypot(p[0][0] - p[1][0], p[0][1] - p[1][1]) < 36) return true;
+      }
+      return false;
+    }
+    function fixWildOverlaps() {
+      const T = travelTime, F = T * 60;
+      const ns = chartNotes.map(n => ({ n, t: n[0] / 1000, h: n[1] })).sort((a, b) => a.t - b.t);
+      const key = (x) => x.n[0] + ":" + x.h, arc = (x) => wildMap.get(key(x));
+      const mk = (x, a) => ({ t: x.t, h: x.h, k: ARC_K[a || arc(x)] });
+      const partner = (x) => ns.find(y => y !== x && y.n[0] === x.n[0]);
+      const bad = (i, a) => {   // ns[i] を高さ a にしたとき、左右が逆の近いノーツとぶつかるか
+        const x = ns[i];
+        for (let d = -1; d <= 1; d += 2) for (let j = i + d; j >= 0 && j < ns.length && Math.abs(ns[j].t - x.t) < 0.6; j += d) {
+          if (ns[j].h !== x.h && wildBallsOverlap(mk(x, a), mk(ns[j]), T, F)) return true;
+        }
+        return false;
+      };
+      for (let pass = 0; pass < 4; pass++) {
+        let changed = false;
+        ns.forEach((x, i) => {
+          if (!bad(i, arc(x))) return;
+          const order = ["normal", "high", "superHigh"], cur = order.indexOf(arc(x));
+          // 左手(h=0)は高いほうへ、右手(h=1)は低いほうへ動かすとすれ違いやすい
+          const cands = (x.h === 0 ? order.slice(cur + 1) : order.slice(0, cur).reverse()).concat(x.h === 0 ? order.slice(0, cur).reverse() : order.slice(cur + 1));
+          const pt = simTimes.has(x.n[0]) ? partner(x) : null;
+          for (const a of cands) {
+            if (pt && arc(pt) === a) continue;   // 同時押しの相手と同じ高さにはしない
+            if (!bad(i, a)) { wildMap.set(key(x), a); changed = true; break; }
+          }
+        });
+        if (!changed) break;
+      }
     }
     function arcForNote(n) {
       if (noteStyle === "fixed") return "normal";
-      if (noteStyle === "wild") return wildMap.get(n[0]) || "normal";
+      if (noteStyle === "wild") return wildMap.get(n[0] + ":" + n[1]) || "normal";
       return ARC_NAMES[n[2]];
     }
     function setNoteStyle(st) {
