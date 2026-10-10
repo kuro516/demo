@@ -416,6 +416,12 @@
         <div class="sec-title">背景・ボールの色</div>
         <div class="set-row" id="themeBtns"></div>
         <div id="themePrev"><i class="a"></i><i class="b"></i><span>SCORE</span></div>
+        <div class="sec-title">ボタン・タッチの左右</div>
+        <div class="set-row" id="swapBtns">
+          <button class="style-btn active" data-v="0" onclick="setSwapInput(false)">ふつう</button>
+          <button class="style-btn" data-v="1" onclick="setSwapInput(true)">反転</button>
+        </div>
+        <div class="offset-hint">ふつう: 左手（Aキー・画面の左側）＝上のレーン、右手（Lキー・右側）＝下のレーン<br>反転: 右手（Lキー・画面の右側）＝上のレーン、左手（Aキー・左側）＝下のレーン（ピアノ譜のように右手が上）</div>
         <div class="sec-title">効果音の種類</div>
         <div class="set-row" id="seBtns"></div>
         <div id="offsetGroup" style="display:flex; flex-direction:column; align-items:center; gap:6px;">
@@ -442,7 +448,7 @@
   </div>
 
   <div class="instructions">
-    <p>🔵 <b>左手:</b> <span class="key-guide blue-key">A</span> キー / 上半分割 🔴 <b>右手:</b> <span class="key-guide red-key">L</span> または <span class="key-guide red-key">J</span> キー / 下半分割</p>
+    <p id="insKeys">🔵 <b>左手:</b> <span class="key-guide blue-key">A</span> キー / 上半分割 🔴 <b>右手:</b> <span class="key-guide red-key">L</span> または <span class="key-guide red-key">J</span> キー / 下半分割</p>
     <p>🔥 <b>10コンボ到達でFEVERモード突入！</b> スコア倍率がアップ＆豪華背景演出！</p>
   </div>
   </div><!-- /stage -->
@@ -524,8 +530,42 @@
       themeId = id; TH = THEMES[id]; document.body.dataset.theme = id;
       try { localStorage.setItem("popcatch-theme", id); } catch (e) {}
       document.querySelectorAll("#themeBtns .style-btn").forEach(b => b.classList.toggle("active", b.dataset.t === id));
+      if (typeof applySwapGuide === "function" && typeof swapInput !== "undefined") applySwapGuide();
       const pv = document.getElementById("themePrev");
       if (pv) { pv.style.background = TH.bg; pv.style.setProperty("--l", TH.L); pv.style.setProperty("--r", TH.R); pv.style.setProperty("--st", TH.stroke); pv.style.setProperty("--tx", TH.text); pv.style.setProperty("--on", TH.on); pv.dataset.glyph = TH.glyph ? "1" : ""; }
+    }
+    // 入力の左右反転: ピアノ譜のように右手が上、の人向け。A/L キー・画面の左右タップの割り当てだけを入れ替える（レーンの位置や色は変えない）
+    let swapInput = false;
+    try { swapInput = localStorage.getItem("popcatch-swap") === "1"; } catch (e) {}
+    const laneOf = (side) => swapInput ? (side === "left" ? "right" : "left") : side;   // 入力した側 → 実際のレーン
+    function setSwapInput(on) {
+      swapInput = !!on;
+      try { localStorage.setItem("popcatch-swap", swapInput ? "1" : "0"); } catch (e) {}
+      document.querySelectorAll("#swapBtns .style-btn").forEach(b => b.classList.toggle("active", (b.dataset.v === "1") === swapInput));
+      applySwapGuide();
+    }
+    function applySwapGuide() {   // タップ案内（スマホ）と「あそびかた」の文言を現在の割り当てに合わせる
+      const g = document.getElementById("tapGuide"); if (!g) return;
+      const l = g.querySelector(".tg.l"), r = g.querySelector(".tg.r");
+      const lc = swapInput ? TH.R : TH.L, rc = swapInput ? TH.L : TH.R;
+      const grad = (dir, c) => "linear-gradient(" + dir + ", " + rgbaOf(c, .12) + ", " + rgbaOf(c, 0) + " 45%)";
+      if (swapInput) {
+        l.style.background = grad("90deg", lc); r.style.background = grad("270deg", rc);
+        l.querySelector(".lbl").style.color = lc; r.querySelector(".lbl").style.color = rc;
+        
+      } else {
+        l.style.background = r.style.background = ""; l.querySelector(".lbl").style.color = r.querySelector(".lbl").style.color = "";
+        
+      }
+      lanes.left.name = swapInput ? "右手" : "左手"; lanes.right.name = swapInput ? "左手" : "右手";   // 上のレーン=右手、下のレーン=左手 に表示も合わせる
+      const ts = document.querySelectorAll("#tutSvg text"); if (ts.length >= 2) { ts[0].textContent = swapInput ? "L" : "A"; ts[1].textContent = swapInput ? "A" : "L"; }
+      const pc = document.querySelector("#tutOverlay .tut-pc"), tc = document.querySelector("#tutOverlay .tut-tc"), ins = document.getElementById("insKeys"), mh = document.querySelector(".m-howto");
+      if (pc) pc.innerHTML = swapInput ? '<b class="l">青（上）</b> は <b class="l">Lキー</b>（右手）／ <b class="r">赤（下）</b> は <b class="r">Aキー</b>（左手）' : '<b class="l">青</b> は <b class="l">Aキー</b>（左手）／ <b class="r">赤</b> は <b class="r">Lキー</b>（右手）';
+      if (tc) tc.innerHTML = swapInput ? '<b class="l">青（上）</b> は <b class="l">画面の右半分</b> ／ <b class="r">赤（下）</b> は <b class="r">画面の左半分</b> をタップ' : '<b class="l">青</b> は <b class="l">画面の左半分</b> ／ <b class="r">赤</b> は <b class="r">画面の右半分</b> をタップ';
+      if (mh) mh.innerHTML = swapInput ? '🔵 画面の<b>右側</b>をタップ＝右手（上）　🔴 画面の<b>左側</b>をタップ＝左手（下）（どこでもOK）' : '🔵 画面の<b>左側</b>をタップ＝左手　🔴 画面の<b>右側</b>をタップ＝右手（どこでもOK）';
+      if (ins) ins.innerHTML = swapInput
+        ? '🔵 <b>右手（上）:</b> <span class="key-guide blue-key">L</span> または <span class="key-guide blue-key">J</span> キー / 上半分クリック　🔴 <b>左手（下）:</b> <span class="key-guide red-key">A</span> キー / 下半分クリック'
+        : '🔵 <b>左手:</b> <span class="key-guide blue-key">A</span> キー / 上半分クリック　🔴 <b>右手:</b> <span class="key-guide red-key">L</span> または <span class="key-guide red-key">J</span> キー / 下半分クリック';
     }
     let seStyle = "standard";
     try { const t = localStorage.getItem("popcatch-se-style"); if (["standard", "perc", "synth", "none"].indexOf(t) >= 0) seStyle = t; } catch (e) {}
@@ -947,9 +987,9 @@
       if (e.key === "Escape" || key === "p") { e.preventDefault(); if (paused) { if (!resuming) resumeGame(); } else pauseGame(); return; }
       if (paused) return;
       if (key === "a") {
-        catchBall("left");
+        catchBall(laneOf("left"));
       } else if (key === "l" || key === "j") {
-        catchBall("right");
+        catchBall(laneOf("right"));
       }
     });
 
@@ -1169,7 +1209,7 @@
       if (!document.body.classList.contains("tutorial")) return;
       const now = performance.now(), d = tutS.t - TUT_FLY;
       let txt, col, ok = false;
-      if (hand !== tutS.h) { txt = tutS.h ? "いまは赤！ （L / 右）" : "いまは青！ （A / 左）"; col = "#ffd54f"; }
+      if (hand !== tutS.h) { txt = tutS.h ? "いまは赤！" : "いまは青！"; col = "#ffd54f"; }
       else if (Math.abs(d) < 130) { txt = "PERFECT!"; col = "#ffd54f"; ok = true; }
       else if (Math.abs(d) < 260) { txt = "GOOD!"; col = "#81c784"; ok = true; }
       else { txt = d < 0 ? "ちょっと早い！" : "ちょっと遅い！"; col = "#b8aecf"; }
@@ -1179,17 +1219,17 @@
     window.addEventListener("keydown", (e) => {
       if (!document.body.classList.contains("tutorial") || e.repeat) return;
       const k = e.key.toLowerCase();
-      if (k === "a") tutPress(0); else if (k === "l" || k === "j") tutPress(1);
+      if (k === "a") tutPress(swapInput ? 1 : 0); else if (k === "l" || k === "j") tutPress(swapInput ? 0 : 1);
     }, true);
     window.addEventListener("pointerdown", (e) => {
       if (!document.body.classList.contains("tutorial") || (e.target.closest && e.target.closest("button"))) return;
-      tutPress(e.clientX < window.innerWidth / 2 ? 0 : 1);
+      tutPress((e.clientX < window.innerWidth / 2) !== swapInput ? 0 : 1);
     }, true);
     function tutAnim() {
       cancelAnimationFrame(tutRaf); tutRes = null; tutTried = false;
       const $ = (id) => document.getElementById(id);
       const ball = $("tBall"), fx = $("tFx");
-      const cfg = [{ y: 50, H: 30, c: "#4fc3f7", L: "押す！（A）" }, { y: 125, H: 34, c: "#ff7a7a", L: "押す！（L）" }];
+      const cfg = [{ y: 50, H: 30, c: "#4fc3f7", L: swapInput ? "押す！（L）" : "押す！（A）" }, { y: 125, H: 34, c: "#ff7a7a", L: swapInput ? "押す！（A）" : "押す！（L）" }];
       let t0 = -1;
       function frame(now) {
         if (!document.body.classList.contains("tutorial")) return;
@@ -2053,10 +2093,11 @@
       e.preventDefault();
       const v = vpSize();
       const left = e.clientX < v.x + v.w / 2;
-      catchBall(left ? "left" : "right");
+      const lane = laneOf(left ? "left" : "right");
+      catchBall(lane);
       const r = document.createElement("div");
       r.className = "ripple"; r.style.left = e.clientX + "px"; r.style.top = e.clientY + "px";
-      r.style.borderColor = left ? "rgba(129,212,250,.8)" : "rgba(255,138,128,.8)";
+      r.style.borderColor = lane === "left" ? "rgba(129,212,250,.8)" : "rgba(255,138,128,.8)";
       document.body.appendChild(r); setTimeout(() => r.remove(), 400);
     }, { passive: false });
 
@@ -2226,7 +2267,7 @@
       const tb = document.getElementById("themeBtns"), sb = document.getElementById("seBtns");
       Object.keys(THEMES).forEach(id => { const b = document.createElement("button"); b.className = "style-btn"; b.dataset.t = id; b.textContent = THEMES[id].name; b.onclick = () => setTheme(id); tb.appendChild(b); });
       [["standard", "標準"], ["perc", "パーカッション"], ["synth", "シンセ"], ["none", "なし"]].forEach(([id, nm]) => { const b = document.createElement("button"); b.className = "style-btn"; b.dataset.t = id; b.textContent = nm; b.onclick = () => setSeStyle(id, true); sb.appendChild(b); });
-      setTheme(themeId); setSeStyle(seStyle, false);
+      setTheme(themeId); setSeStyle(seStyle, false); setSwapInput(swapInput);
     })();
     (function () {   // iOSは audio.volume が効かない（常に1）。曲の音量スライダーを隠して端末の音量ボタンを案内
       try { const keep = bgm.volume; bgm.volume = 0.37; const ok = Math.abs(bgm.volume - 0.37) < 0.01; bgm.volume = keep;
