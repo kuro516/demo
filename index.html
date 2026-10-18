@@ -63,6 +63,12 @@
       gap: 8px;
     }
     .diff-btn .stars { display: block; font-size: 9px; font-weight: normal; margin-top: 2px; color: #ffca28; letter-spacing: 0; white-space: nowrap; }
+    .diff-btn .stars .sn { display: none; }
+    body.mobile .diff-btn .stars .sf { display: none; } body.mobile .diff-btn .stars .sn { display: inline; }
+    body.mobile .diff-selector { flex-wrap: nowrap; gap: 5px; }
+    body.mobile .diff-btn { padding: 5px 6px; font-size: 11px; white-space: nowrap; min-width: 0; flex: 0 1 auto; }
+    body.mobile .diff-btn .em { font-size: 10px; }
+    body.mobile .diff-btn .stars { font-size: 10px; }
     .song-btn .ss { flex: none; font-size: 10px; color: #ffca28; white-space: nowrap; }
     .diff-btn {
       padding: 8px 16px;
@@ -247,8 +253,14 @@
     /* スマホ横向きでジャケット表示のとき: 左にジャケット、右に操作パネル（重ならない） */
     body.mobile.m-title.jk-on #stage { gap: 10px; }
     body.mobile.m-title.jk-on .controls { position: static; transform: none; left: auto; top: auto; width: auto; flex: 1 1 0; min-width: 0; max-height: 100%; margin: 0; }
-    body.mobile.jk-on .diff-btn { padding: 5px 6px; font-size: 11px; white-space: nowrap; }
-    body.mobile.jk-on .diff-selector { gap: 5px; }
+    /* ジャケット横並び（幅がせまい）のときは、難易度を2×2に並べる。名前と☆は1行、ベストは次の行 */
+    body.mobile.jk-on .diff-selector { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; width: 100%; }
+    body.mobile.jk-on .style-btn { white-space: nowrap; padding: 4px 9px; }
+    body.mobile.jk-on .style-selector { flex-wrap: wrap; justify-content: center; gap: 5px; }
+    body.mobile.jk-on .diff-btn .em { display: none; }
+    body.mobile.jk-on .diff-btn { padding: 3px 3px; font-size: 10.5px; white-space: nowrap; display: flex; flex-wrap: wrap; justify-content: center; align-items: baseline; column-gap: 4px; }
+    body.mobile.jk-on .diff-btn .stars { display: inline; margin-top: 0; font-size: 9.5px; }
+    body.mobile.jk-on .diff-btn .best { flex: 0 0 100%; margin-top: 0; font-size: 9px; }
     body.mobile.jk-on .pr-row input[type=range] { width: 96px; }
     body.mobile.jk-on .pr-row .pv { min-width: 0; }
 
@@ -372,10 +384,10 @@
         <div class="song-selector" id="songGroup"></div>
         <div class="sec-title">難易度</div>
         <div class="diff-selector" id="diffGroup">
-          <button class="diff-btn active" data-d="easy" onclick="setDifficulty('easy')">🌱 かんたん<span class="stars" id="stars-easy"></span><small class="best" id="best-easy"></small></button>
-          <button class="diff-btn" data-d="normal" onclick="setDifficulty('normal')">🎵 ふつう<span class="stars" id="stars-normal"></span><small class="best" id="best-normal"></small></button>
-          <button class="diff-btn" data-d="mid" onclick="setDifficulty('mid')">🔥 むずかしい<span class="stars" id="stars-mid"></span><small class="best" id="best-mid"></small></button>
-          <button class="diff-btn" data-d="hard" onclick="setDifficulty('hard')">⚡ すごくむずかしい<span class="stars" id="stars-hard"></span><small class="best" id="best-hard"></small></button>
+          <button class="diff-btn active" data-d="easy" onclick="setDifficulty('easy')"><span class="em">🌱</span> かんたん<span class="stars" id="stars-easy"></span><small class="best" id="best-easy"></small></button>
+          <button class="diff-btn" data-d="normal" onclick="setDifficulty('normal')"><span class="em">🎵</span> ふつう<span class="stars" id="stars-normal"></span><small class="best" id="best-normal"></small></button>
+          <button class="diff-btn" data-d="mid" onclick="setDifficulty('mid')"><span class="em">🔥</span> むずかしい<span class="stars" id="stars-mid"></span><small class="best" id="best-mid"></small></button>
+          <button class="diff-btn" data-d="hard" onclick="setDifficulty('hard')"><span class="em">⚡</span> すごくむずかしい<span class="stars" id="stars-hard"></span><small class="best" id="best-hard"></small></button>
         </div>
         <div class="sec-title">ノーツのパターン</div>
         <div class="style-selector" id="styleGroup">
@@ -717,7 +729,7 @@
     }
     function renderStars() {
       const sg = SONGS[songIdx]; if (!sg) return;
-      DIFFS.forEach(d => { const el = document.getElementById("stars-" + d); if (el) el.textContent = "★".repeat(starsOf(sg, d)); });
+      DIFFS.forEach(d => { const el = document.getElementById("stars-" + d); if (el) { const n = starsOf(sg, d); el.innerHTML = '<span class="sf">' + "★".repeat(n) + '</span><span class="sn">★' + n + "</span>"; } });
     }
     function renderBest() {
       try { renderStars(); } catch (e) {}
