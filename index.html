@@ -58,8 +58,12 @@
     }
     .diff-selector {
       display: flex;
-      gap: 10px;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 8px;
     }
+    .diff-btn .stars { display: block; font-size: 9px; font-weight: normal; margin-top: 2px; color: #ffca28; letter-spacing: 0; white-space: nowrap; }
+    .song-btn .ss { flex: none; font-size: 10px; color: #ffca28; white-space: nowrap; }
     .diff-btn {
       padding: 8px 16px;
       font-size: 14px;
@@ -368,9 +372,10 @@
         <div class="song-selector" id="songGroup"></div>
         <div class="sec-title">難易度</div>
         <div class="diff-selector" id="diffGroup">
-          <button class="diff-btn active" data-d="easy" onclick="setDifficulty('easy')">🌱 かんたん<small class="best" id="best-easy"></small></button>
-          <button class="diff-btn" data-d="normal" onclick="setDifficulty('normal')">🎵 ふつう<small class="best" id="best-normal"></small></button>
-          <button class="diff-btn" data-d="hard" onclick="setDifficulty('hard')">🔥 むずかしい<small class="best" id="best-hard"></small></button>
+          <button class="diff-btn active" data-d="easy" onclick="setDifficulty('easy')">🌱 かんたん<span class="stars" id="stars-easy"></span><small class="best" id="best-easy"></small></button>
+          <button class="diff-btn" data-d="normal" onclick="setDifficulty('normal')">🎵 ふつう<span class="stars" id="stars-normal"></span><small class="best" id="best-normal"></small></button>
+          <button class="diff-btn" data-d="mid" onclick="setDifficulty('mid')">🔥 むずかしい<span class="stars" id="stars-mid"></span><small class="best" id="best-mid"></small></button>
+          <button class="diff-btn" data-d="hard" onclick="setDifficulty('hard')">⚡ すごくむずかしい<span class="stars" id="stars-hard"></span><small class="best" id="best-hard"></small></button>
         </div>
         <div class="sec-title">ノーツのパターン</div>
         <div class="style-selector" id="styleGroup">
@@ -691,8 +696,32 @@
     let history = [];
     try { history = JSON.parse(localStorage.getItem("popcatch-history") || "[]") || []; } catch (e) { history = []; }
     function saveHistory() { try { localStorage.setItem("popcatch-history", JSON.stringify(history.slice(-200))); } catch (e) {} }
+    // 難易度: 内部キーは easy / normal / mid(新しい「むずかしい」) / hard(「すごくむずかしい」。旧バージョンの hard の記録をそのまま引き継ぐ)
+    const DIFFS = ["easy", "normal", "mid", "hard"];
+    const DIFF_NAME = { easy: "かんたん", normal: "ふつう", mid: "むずかしい", hard: "すごくむずかしい" };
+    // ☆の数（1〜10）: 譜面の平均密度と最大密度（5秒間）から求めるおおまかな目安
+    const starCache = {};
+    function starsOf(sg, d) {
+      const k = sg.id + ":" + d; if (starCache[k] !== undefined) return starCache[k];
+      let n = 1;
+      try {
+        const ch = sg.charts(), t = ch && ch[d] ? ch[d].map(x => x[0]).sort((a, b) => a - b) : [];
+        if (t.length > 10) {
+          const avg = t.length / ((t[t.length - 1] - t[0]) / 1000);
+          let pk = 0, j = 0;
+          for (let i = 0; i < t.length; i++) { while (j < t.length && t[j] < t[i] + 5000) j++; pk = Math.max(pk, (j - i) / 5); }
+          n = Math.max(1, Math.min(10, Math.round((0.5 * avg + 0.5 * pk - 1.4) / 0.3)));
+        }
+      } catch (e) {}
+      return (starCache[k] = n);
+    }
+    function renderStars() {
+      const sg = SONGS[songIdx]; if (!sg) return;
+      DIFFS.forEach(d => { const el = document.getElementById("stars-" + d); if (el) el.textContent = "★".repeat(starsOf(sg, d)); });
+    }
     function renderBest() {
-      ["easy", "normal", "hard"].forEach((d) => {
+      try { renderStars(); } catch (e) {}
+      DIFFS.forEach((d) => {
         const el = document.getElementById("best-" + d), b = bestData[bkey(d)];
         if (!el) return;
         el.innerHTML = b ? `BEST ${b.score.toLocaleString()}  ${b.rank}${b.ap ? '<span class="bd ap">AP</span>' : b.fc ? '<span class="bd">FC</span>' : ""}` : "未プレイ";
@@ -702,7 +731,8 @@
         const sg = SONGS[Number(btn.dataset.i)], b = bestData[bkey(difficulty, sg)], sr = btn.querySelector(".sr");
         if (!sr) return;
         sr.innerHTML = b ? b.rank + (b.ap ? '<span class="bd ap">AP</span>' : b.fc ? '<span class="bd">FC</span>' : "") : "—";
-        btn.querySelectorAll(".sd i").forEach((dot, k) => { const x = bestData[bkey(["easy", "normal", "hard"][k], sg)]; dot.className = x ? (x.ap ? "ap" : x.fc ? "fc" : "p") : ""; dot.title = ["EASY", "NORMAL", "HARD"][k]; });
+        btn.querySelectorAll(".sd i").forEach((dot, k) => { const x = bestData[bkey(DIFFS[k], sg)]; dot.className = x ? (x.ap ? "ap" : x.fc ? "fc" : "p") : ""; dot.title = DIFF_NAME[DIFFS[k]]; });
+        const ssEl = btn.querySelector(".ss"); if (ssEl) ssEl.textContent = "★" + starsOf(sg, difficulty);
         sr.style.color = btn.classList.contains("active") ? "inherit" : (b ? rankColor(b.rank) : "#777");
       });
     }
@@ -1158,7 +1188,7 @@
       showView("practice"); prRefresh();
     }
     function prRefresh() {
-      document.getElementById("prInfo").textContent = "― " + curSong().title + " / " + ({ easy: "かんたん", normal: "ふつう", hard: "むずかしい" })[difficulty];
+      document.getElementById("prInfo").textContent = "― " + curSong().title + " / " + DIFF_NAME[difficulty];
       document.getElementById("prStart").value = pr.sb; document.getElementById("prEnd").value = pr.eb;
       document.getElementById("prStartVal").textContent = "第" + (pr.sb + 1) + "小節  " + fmtT(barTime(pr.sb));
       document.getElementById("prEndVal").textContent = "第" + (pr.eb + 1) + "小節  " + fmtT(barTime(pr.eb + 1));
@@ -1956,7 +1986,7 @@
 
 
     // ===================== 記録画面 =====================
-    const DIFF_LABEL = { easy: "🌱 かんたん", normal: "🎵 ふつう", hard: "🔥 むずかしい" };
+    const DIFF_LABEL = { easy: "🌱 かんたん", normal: "🎵 ふつう", mid: "🔥 むずかしい", hard: "⚡ すごくむずかしい" };
     let recDiff = "hard", recSong = 0;
     const fmtDate = (t) => { try { return new Date(t).toLocaleString("ja-JP", { month: "numeric", day: "numeric", hour: "2-digit", minute: "2-digit" }); } catch (e) { return ""; } };
     function rankColor(r) { return (RANK_STYLE[r] || RANK_STYLE.C).c2; }
@@ -1977,7 +2007,7 @@
       let h = '<h2>📊 記録</h2><div class="rec-tabs">';
       SONGS.forEach((sg, i) => { h += `<button class="rec-tab ${i === recSong ? "on" : ""}" style="${i === recSong ? "background:#29b6f6;border-color:#29b6f6;color:#04202e" : ""}" onclick="setRecSong(${i})">♪ ${sg.title}</button>`; });
       h += '</div><div class="rec-tabs">';
-      ["easy", "normal", "hard"].forEach(d => { h += `<button class="rec-tab ${d === recDiff ? "on" : ""}" onclick="setRecDiff('${d}')">${DIFF_LABEL[d]}</button>`; });
+      DIFFS.forEach(d => { h += `<button class="rec-tab ${d === recDiff ? "on" : ""}" onclick="setRecDiff('${d}')">${DIFF_LABEL[d]}</button>`; });
       h += "</div>";
       if (!b) {
         h += '<div class="rec-card" style="text-align:center;color:#a79dc0">この難易度はまだ遊んでいません</div>';
@@ -2252,7 +2282,7 @@
       const g = document.getElementById("songGroup");
       SONGS.forEach((sg, i) => {
         const b = document.createElement("button");
-        b.className = "song-btn"; b.dataset.i = String(i); b.innerHTML = '<span class="st"></span><span class="sd"><i></i><i></i><i></i></span><span class="sr"></span>'; b.firstChild.textContent = "♪ " + sg.title;
+        b.className = "song-btn"; b.dataset.i = String(i); b.innerHTML = '<span class="st"></span><span class="ss"></span><span class="sd"><i></i><i></i><i></i><i></i></span><span class="sr"></span>'; b.firstChild.textContent = "♪ " + sg.title;
         b.onclick = () => selectSong(i);
         g.appendChild(b);
       });
