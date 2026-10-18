@@ -496,6 +496,7 @@
   <script src="charts_song5.js"></script>
   <script src="charts_song6.js"></script>
   <script src="charts_song7.js"></script>
+  <script src="charts_song8.js"></script>
   <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -879,7 +880,8 @@
       { id: "juggle", title: "JUGGLE THE NIGHT", file: "song4.mp3", jacket: "jacket_JUGGLE.png", bpm: 149.657, offset: 0.0682, travelBeats: 1.75, breakBars: [[32, 40], [72, 82]], charts: () => (typeof CHARTS_SONG4 !== "undefined" ? CHARTS_SONG4 : null) },
       { id: "shiki", title: "四季を歩く", file: "song5.mp3", jacket: "jacket_shiki.png", bpm: 107.755, offset: 0.1554, travelBeats: 1.25, breakBars: [41, 45], charts: () => (typeof CHARTS_SONG5 !== "undefined" ? CHARTS_SONG5 : null) },
       { id: "astro", title: "アストロノート", file: "song6.mp3", jacket: "jacket_astro.png", bpm: 128.706, offset: 0.1689, travelBeats: 1.6, breakBars: [[44, 52], [112, 128]], charts: () => (typeof CHARTS_SONG6 !== "undefined" ? CHARTS_SONG6 : null) },
-      { id: "astral", title: "黒点のアストラル", file: "song7.mp3", jacket: "jacket_astral.png", bpm: 168.6157, offset: 0.1298, travelBeats: 2, breakBars: [[56, 64], [116, 125]], charts: () => (typeof CHARTS_SONG7 !== "undefined" ? CHARTS_SONG7 : null) }
+      { id: "astral", title: "黒点のアストラル", file: "song7.mp3", jacket: "jacket_astral.png", bpm: 168.6157, offset: 0.1298, travelBeats: 2, breakBars: [[56, 64], [116, 125]], charts: () => (typeof CHARTS_SONG7 !== "undefined" ? CHARTS_SONG7 : null) },
+      { id: "kakera", title: "欠片", file: "song8.mp3", jacket: "jacket_kakera.png", bpm: 153.6534, offset: 0.0439, travelBeats: 1.9, breakBars: [[98, 102], [148, 155]], charts: () => (typeof CHARTS_SONG8 !== "undefined" ? CHARTS_SONG8 : null) }
     ];
     let songIdx = 0;
     try { const sid = localStorage.getItem("popcatch-song-id"); const si = SONGS.findIndex(x => x.id === sid); if (si >= 0) songIdx = si; } catch (e) {}
