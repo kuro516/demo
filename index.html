@@ -496,7 +496,7 @@
   <script src="charts_song5.js"></script>
   <script src="charts_song6.js"></script>
   <script src="charts_song7.js"></script>
-  <script src="charts_song8.js"></script>
+  <script src="charts_song10.js"></script>
   <script>
     const canvas = document.getElementById("gameCanvas");
     const ctx = canvas.getContext("2d");
@@ -713,18 +713,36 @@
     // 難易度: 内部キーは easy / normal / mid(新しい「むずかしい」) / hard(「すごくむずかしい」。旧バージョンの hard の記録をそのまま引き継ぐ)
     const DIFFS = ["easy", "normal", "mid", "hard"];
     const DIFF_NAME = { easy: "かんたん", normal: "ふつう", mid: "むずかしい", hard: "すごくむずかしい" };
-    // ☆の数（1〜10）: 譜面の平均密度と最大密度（5秒間）から求めるおおまかな目安
-    const starCache = {};
+    // ☆の数（1〜10）: 譜面を9つの面から見た目安
+    //   密度(平均・最大5秒・持続) / 速い連打の割合 / 同時押しの数 / 同じ手の連続 / 同時に空中にある球の数 / 裏拍の割合 / 曲の長さ(集中力。長いほど加点するだけで、短くても減点しない)
+    const starCache = {}, starInfo = {};
     function starsOf(sg, d) {
       const k = sg.id + ":" + d; if (starCache[k] !== undefined) return starCache[k];
       let n = 1;
       try {
-        const ch = sg.charts(), t = ch && ch[d] ? ch[d].map(x => x[0]).sort((a, b) => a - b) : [];
-        if (t.length > 10) {
-          const avg = t.length / ((t[t.length - 1] - t[0]) / 1000);
-          let pk = 0, j = 0;
-          for (let i = 0; i < t.length; i++) { while (j < t.length && t[j] < t[i] + 5000) j++; pk = Math.max(pk, (j - i) / 5); }
-          n = Math.max(1, Math.min(10, Math.round((0.5 * avg + 0.5 * pk - 1.4) / 0.3)));
+        const ch = sg.charts(), nts = ch && ch[d] ? ch[d].slice().sort((a, b) => a[0] - b[0] || a[1] - b[1]) : [];
+        if (nts.length > 10) {
+          const cl = x => Math.max(0, Math.min(1, x));
+          const lb = (arr, x) => { let lo = 0, hi = arr.length; while (lo < hi) { const m = (lo + hi) >> 1; if (arr[m] < x) lo = m + 1; else hi = m; } return lo; };
+          const t = nts.map(x => x[0] / 1000), ut = t.filter((x, i) => i === 0 || x !== t[i - 1]);
+          const dur = t[t.length - 1] - t[0], T = 60 / sg.bpm * sg.travelBeats, beat = 60 / sg.bpm;
+          const avg = t.length / dur;
+          let pk5 = 0; for (let i = 0; i < t.length; i++) pk5 = Math.max(pk5, (lb(t, t[i] + 5) - i) / 5);
+          const dens = [], air = [];
+          for (let a = t[0]; a < t[t.length - 1] - 3; a += 0.5) { dens.push((lb(t, a + 3) - lb(t, a)) / 3); air.push(lb(t, a + T) - lb(t, a)); }
+          const pctl = (arr, q) => { const v = arr.slice().sort((x, y) => x - y), r = (v.length - 1) * q, f = Math.floor(r), c = Math.min(f + 1, v.length - 1); return v[f] + (v[c] - v[f]) * (r - f); };
+          const p90 = pctl(dens, 0.9), airpk = Math.max.apply(null, air);
+          const fast = ut.slice(1).filter((x, i) => x - ut[i] < 0.3).length / Math.max(1, ut.length - 1);
+          const sim = (t.length - ut.length) / dur * 60;
+          let sh = 0, sc = 0; [0, 1].forEach(h => { const th = nts.filter(x => x[1] === h).map(x => x[0] / 1000); for (let i = 1; i < th.length; i++) { sc++; if (th[i] - th[i - 1] < 0.4) sh++; } });
+          const same = sc ? sh / sc : 0;
+          const hb = beat / 2, synco = ut.filter(x => { let r = (((x - sg.offset) % hb) + hb) % hb / hb; r = Math.min(r, 1 - r); return r > 0.25; }).length / ut.length;
+          const a0 = cl((avg - 1.2) / 2.6);
+          const c = { avg: a0, pk5: cl((pk5 - 2.2) / 2.2), p90: cl((p90 - 1.7) / 3.0), fast: cl(fast / 0.8), sim: cl(sim / 9), same: cl(same / 0.5), air: cl((airpk - 3) / 2), synco: cl(synco / 0.35), end: cl((dur - 170) / 140) * (0.4 + 0.6 * a0) };
+          const w = { avg: .15, pk5: .15, p90: .15, fast: .15, sim: .10, same: .15, air: .10, synco: .05, end: .05 };   // 曲の長さは加点のみ（短いから易しくなることはない）
+          let sc2 = 0; for (const q in w) sc2 += w[q] * c[q];
+          n = Math.max(1, Math.min(10, Math.round(1 + 9.4 * sc2)));
+          starInfo[k] = { score: sc2, c };
         }
       } catch (e) {}
       return (starCache[k] = n);
@@ -881,7 +899,7 @@
       { id: "shiki", title: "四季を歩く", file: "song5.mp3", jacket: "jacket_shiki.png", bpm: 107.755, offset: 0.1554, travelBeats: 1.25, breakBars: [41, 45], charts: () => (typeof CHARTS_SONG5 !== "undefined" ? CHARTS_SONG5 : null) },
       { id: "astro", title: "アストロノート", file: "song6.mp3", jacket: "jacket_astro.png", bpm: 128.706, offset: 0.1689, travelBeats: 1.6, breakBars: [[44, 52], [112, 128]], charts: () => (typeof CHARTS_SONG6 !== "undefined" ? CHARTS_SONG6 : null) },
       { id: "astral", title: "黒点のアストラル", file: "song7.mp3", jacket: "jacket_astral.png", bpm: 168.6157, offset: 0.1298, travelBeats: 2, breakBars: [[56, 64], [116, 125]], charts: () => (typeof CHARTS_SONG7 !== "undefined" ? CHARTS_SONG7 : null) },
-      { id: "kakera", title: "欠片", file: "song8.mp3", jacket: "jacket_kakera.png", bpm: 153.6534, offset: 0.0439, travelBeats: 1.9, breakBars: [[98, 102], [148, 155]], charts: () => (typeof CHARTS_SONG8 !== "undefined" ? CHARTS_SONG8 : null) }
+      { id: "usagimagic", title: "うさぎマジック", file: "song10.mp3", jacket: "jacket_usagimagic.png", bpm: 159.639, offset: 0.2688, travelBeats: 2, breakBars: [[20, 28], [62, 70]], charts: () => (typeof CHARTS_SONG10 !== "undefined" ? CHARTS_SONG10 : null) }
     ];
     let songIdx = 0;
     try { const sid = localStorage.getItem("popcatch-song-id"); const si = SONGS.findIndex(x => x.id === sid); if (si >= 0) songIdx = si; } catch (e) {}
