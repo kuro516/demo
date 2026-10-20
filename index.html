@@ -90,6 +90,7 @@
     .sd i.ap { background: conic-gradient(#ff4081,#ffca28,#29b6f6,#00e676,#b388ff,#ff4081); box-shadow: 0 0 6px #ff4081; }
     .bd { display: inline-block; margin-left: 5px; padding: 0 6px; border-radius: 8px; font-size: 10px; line-height: 15px; font-weight: 900; color: #3a2800; background: #ffca28; vertical-align: 1px; }
     .bd.ap { color: #fff; background: linear-gradient(90deg,#ff4081,#ff9100,#29b6f6,#b388ff); text-shadow: 0 0 2px rgba(0,0,0,.5); }
+    .song-btn .sl { font-size: 11px; opacity: .7; white-space: nowrap; }
     .song-btn .sr { font-size: 12px; font-weight: bold; letter-spacing: .3px; opacity: .95; white-space: nowrap; }
     .song-btn.active { border-color: #29b6f6; background: #29b6f6; color: #04202e; box-shadow: 0 0 10px rgba(41,182,246,.45); }
     body.mobile .song-btn { padding: 4px 12px; font-size: 12px; }
@@ -439,6 +440,10 @@
           <button class="style-btn" data-v="1" onclick="setSwapInput(true)">反転</button>
         </div>
         <div class="offset-hint">ふつう: 左手（Aキー・画面の左側）＝上のレーン、右手（Lキー・右側）＝下のレーン<br>反転: 右手（Lキー・画面の右側）＝上のレーン、左手（Aキー・左側）＝下のレーン（ピアノ譜のように右手が上）</div>
+        <div class="sec-title">ボールの形</div>
+        <div class="set-row" id="shapeBtns"></div>
+        <canvas id="shapePrev" width="200" height="60" style="display:block;margin:6px auto 0;border:0;box-shadow:none;background:none;width:200px;height:60px"></canvas>
+        <div class="offset-hint">ボールの見た目だけが変わります（青＝上のレーン／赤＝下のレーンの色はそのまま）</div>
         <div class="sec-title">効果音の種類</div>
         <div class="set-row" id="seBtns"></div>
         <div id="offsetGroup" style="display:flex; flex-direction:column; align-items:center; gap:6px;">
@@ -554,6 +559,9 @@
       if (pv) { pv.style.background = TH.bg; pv.style.setProperty("--l", TH.L); pv.style.setProperty("--r", TH.R); pv.style.setProperty("--st", TH.stroke); pv.style.setProperty("--tx", TH.text); pv.style.setProperty("--on", TH.on); pv.dataset.glyph = TH.glyph ? "1" : ""; }
     }
     // 入力の左右反転: ピアノ譜のように右手が上、の人向け。A/L キー・画面の左右タップの割り当てだけを入れ替える（レーンの位置や色は変えない）
+    let lastDiffMap = {};
+    try { lastDiffMap = JSON.parse(localStorage.getItem("popcatch-lastdiff") || "{}") || {}; } catch (e) {}
+    const fmtLen = (sg) => Math.floor(sg.len / 60) + ":" + String(sg.len % 60).padStart(2, "0");   // 曲の実際の長さ（秒）
     let swapInput = false;
     try { swapInput = localStorage.getItem("popcatch-swap") === "1"; } catch (e) {}
     const laneOf = (side) => swapInput ? (side === "left" ? "right" : "left") : side;   // 入力した側 → 実際のレーン
@@ -892,14 +900,14 @@
     // ★ 音源(music.mp3)の解析値: 164.6226 BPM、1拍目は曲頭から約0.156秒
     // ★ 曲リスト。曲ごとに BPM・拍の位置・譜面・ブレイクダウン区間(小節番号)を持つ
     const SONGS = [
-      { id: "usagi", title: "うさぎロケット", file: "usagi_rocket.mp3", jacket: "jacket_usagi.jpg", bpm: 127.709, offset: 0.4513, travelBeats: 1.5, breakBars: [152, 156], charts: () => (typeof CHARTS_USAGI !== "undefined" ? CHARTS_USAGI : null) },
-      { id: "hakarenai", title: "測れない色", file: "music.mp3", jacket: "jacket_hakarenai.png", bpm: 164.6226, offset: 0.1563, travelBeats: 2, breakBars: [99, 105], charts: () => (typeof CHARTS_HAKARENAI !== "undefined" ? CHARTS_HAKARENAI : null) },
-      { id: "song3", title: "ゼロ地点", file: "song3.mp3", jacket: "jacket_song3.png", bpm: 104.2639, offset: 0.0190, travelBeats: 1.2, breakBars: [[45, 53], [73, 80]], charts: () => (typeof CHARTS_SONG3 !== "undefined" ? CHARTS_SONG3 : null) },
-      { id: "juggle", title: "JUGGLE THE NIGHT", file: "song4.mp3", jacket: "jacket_JUGGLE.png", bpm: 149.657, offset: 0.0682, travelBeats: 1.75, breakBars: [[32, 40], [72, 82]], charts: () => (typeof CHARTS_SONG4 !== "undefined" ? CHARTS_SONG4 : null) },
-      { id: "shiki", title: "四季を歩く", file: "song5.mp3", jacket: "jacket_shiki.png", bpm: 107.755, offset: 0.1554, travelBeats: 1.25, breakBars: [41, 45], charts: () => (typeof CHARTS_SONG5 !== "undefined" ? CHARTS_SONG5 : null) },
-      { id: "astro", title: "アストロノート", file: "song6.mp3", jacket: "jacket_astro.png", bpm: 128.706, offset: 0.1689, travelBeats: 1.6, breakBars: [[44, 52], [112, 128]], charts: () => (typeof CHARTS_SONG6 !== "undefined" ? CHARTS_SONG6 : null) },
-      { id: "astral", title: "黒点のアストラル", file: "song7.mp3", jacket: "jacket_astral.png", bpm: 168.6157, offset: 0.1298, travelBeats: 2, breakBars: [[56, 64], [116, 125]], charts: () => (typeof CHARTS_SONG7 !== "undefined" ? CHARTS_SONG7 : null) },
-      { id: "usagimagic", title: "うさぎマジック", file: "song10.mp3", jacket: "jacket_usagimagic.png", bpm: 159.639, offset: 0.2688, travelBeats: 2, breakBars: [[20, 28], [62, 70]], charts: () => (typeof CHARTS_SONG10 !== "undefined" ? CHARTS_SONG10 : null) }
+      { id: "usagi", len: 314, title: "うさぎロケット", file: "usagi_rocket.mp3", jacket: "jacket_usagi.jpg", bpm: 127.709, offset: 0.4513, travelBeats: 1.5, breakBars: [152, 156], charts: () => (typeof CHARTS_USAGI !== "undefined" ? CHARTS_USAGI : null) },
+      { id: "hakarenai", len: 200, title: "測れない色", file: "music.mp3", jacket: "jacket_hakarenai.png", bpm: 164.6226, offset: 0.1563, travelBeats: 2, breakBars: [99, 105], charts: () => (typeof CHARTS_HAKARENAI !== "undefined" ? CHARTS_HAKARENAI : null) },
+      { id: "song3", len: 264, title: "ゼロ地点", file: "song3.mp3", jacket: "jacket_song3.png", bpm: 104.2639, offset: 0.0190, travelBeats: 1.2, breakBars: [[45, 53], [73, 80]], charts: () => (typeof CHARTS_SONG3 !== "undefined" ? CHARTS_SONG3 : null) },
+      { id: "juggle", len: 182, title: "JUGGLE THE NIGHT", file: "song4.mp3", jacket: "jacket_JUGGLE.png", bpm: 149.657, offset: 0.0682, travelBeats: 1.75, breakBars: [[32, 40], [72, 82]], charts: () => (typeof CHARTS_SONG4 !== "undefined" ? CHARTS_SONG4 : null) },
+      { id: "shiki", len: 192, title: "四季を歩く", file: "song5.mp3", jacket: "jacket_shiki.png", bpm: 107.755, offset: 0.1554, travelBeats: 1.25, breakBars: [41, 45], charts: () => (typeof CHARTS_SONG5 !== "undefined" ? CHARTS_SONG5 : null) },
+      { id: "astro", len: 275, title: "アストロノート", file: "song6.mp3", jacket: "jacket_astro.png", bpm: 128.706, offset: 0.1689, travelBeats: 1.6, breakBars: [[44, 52], [112, 128]], charts: () => (typeof CHARTS_SONG6 !== "undefined" ? CHARTS_SONG6 : null) },
+      { id: "astral", len: 239, title: "黒点のアストラル", file: "song7.mp3", jacket: "jacket_astral.png", bpm: 168.6157, offset: 0.1298, travelBeats: 2, breakBars: [[56, 64], [116, 125]], charts: () => (typeof CHARTS_SONG7 !== "undefined" ? CHARTS_SONG7 : null) },
+      { id: "usagimagic", len: 222, title: "うさぎマジック", file: "song10.mp3", jacket: "jacket_usagimagic.png", bpm: 159.639, offset: 0.2688, travelBeats: 2, breakBars: [[20, 28], [62, 70]], charts: () => (typeof CHARTS_SONG10 !== "undefined" ? CHARTS_SONG10 : null) }
     ];
     let songIdx = 0;
     try { const sid = localStorage.getItem("popcatch-song-id"); const si = SONGS.findIndex(x => x.id === sid); if (si >= 0) songIdx = si; } catch (e) {}
@@ -1041,6 +1049,7 @@
     function setDifficulty(diff) {
       if (isPlaying) return;
       difficulty = diff;
+      try { lastDiffMap[SONGS[songIdx].id] = diff; localStorage.setItem("popcatch-lastdiff", JSON.stringify(lastDiffMap)); } catch (e) {}
       document.querySelectorAll('.diff-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.d === diff));
       renderBest();
     }
@@ -1412,6 +1421,44 @@
       drawTitleScreen();
     }
 
+
+    // ===== ボールの形（設定で変更） =====
+    const BALL_SHAPES = [["circle", "● 丸"], ["star", "⭐ 星"], ["heart", "❤ ハート"], ["paw", "🐾 肉球"]];
+    let ballShape = "circle";
+    try { const v = localStorage.getItem("popcatch-ballshape"); if (BALL_SHAPES.some(x => x[0] === v)) ballShape = v; } catch (e) {}
+    function setBallShape(v) {
+      ballShape = v;
+      try { localStorage.setItem("popcatch-ballshape", v); } catch (e) {}
+      document.querySelectorAll("#shapeBtns .style-btn").forEach(b => b.classList.toggle("active", b.dataset.v === v));
+      const c = document.getElementById("shapePrev"); if (c) { const g = c.getContext("2d"); g.clearRect(0, 0, c.width, c.height); [["left", 60], ["right", 140]].forEach(([k, x]) => drawBallShape(g, x, 30, k === "left" ? TH.L : TH.R, v, k)); }
+    }
+    function drawBallShape(g, x, y, color, shape, laneKey) {
+      g.save(); g.translate(x, y); g.lineJoin = "round"; g.lineCap = "round";
+      g.fillStyle = color; g.strokeStyle = TH.stroke; g.lineWidth = Math.max(2, TH.ballW);
+      const fs = () => { g.fill(); g.stroke(); };
+      let face = false;
+      if (shape === "cat") {
+        [[-1], [1]].forEach(([sg]) => { g.beginPath(); g.moveTo(sg * 16, -5); g.lineTo(sg * 13, -21); g.lineTo(sg * 3, -13); g.closePath(); fs(); });
+        g.beginPath(); g.arc(0, 1, 16.5, 0, Math.PI * 2); fs(); face = "cat";
+      } else if (shape === "rabbit") {
+        [[-1], [1]].forEach(([sg]) => { g.beginPath(); g.ellipse(sg * 6, -13, 4.6, 11, sg * 0.12, 0, Math.PI * 2); fs(); });
+        g.beginPath(); g.arc(0, 4, 14.5, 0, Math.PI * 2); fs(); face = "rabbit";
+      } else if (shape === "star") {
+        g.beginPath(); for (let i = 0; i < 10; i++) { const r = i % 2 ? 9.5 : 21, a = -Math.PI / 2 + i * Math.PI / 5; g.lineTo(r * Math.cos(a), r * Math.sin(a) + 1.5); } g.closePath(); fs();
+      } else if (shape === "heart") {
+        g.beginPath(); g.moveTo(0, 17); g.bezierCurveTo(-27, 0, -15, -20, 0, -8); g.bezierCurveTo(15, -20, 27, 0, 0, 17); g.closePath(); fs();
+      } else if (shape === "paw") {
+        [[-12.5, -2.5], [-5, -11.5], [5, -11.5], [12.5, -2.5]].forEach(([a, b]) => { g.beginPath(); g.ellipse(a, b, 4.8, 5.6, 0, 0, Math.PI * 2); fs(); });
+        g.beginPath(); g.ellipse(0, 7, 11.5, 9, 0, 0, Math.PI * 2); fs();
+      } else { g.beginPath(); g.arc(0, 0, 18, 0, Math.PI * 2); fs(); }
+      if (face && !TH.glyph) {   // ちいさなお顔
+        g.fillStyle = TH.on || "#222"; const fy = shape === "rabbit" ? 4 : 1;
+        g.beginPath(); g.arc(-5.5, fy, 1.9, 0, Math.PI * 2); g.arc(5.5, fy, 1.9, 0, Math.PI * 2); g.fill();
+        g.beginPath(); g.moveTo(-2.2, fy + 5); g.quadraticCurveTo(0, fy + 8, 2.2, fy + 5); g.lineWidth = 1.5; g.strokeStyle = TH.on || "#222"; g.stroke();
+      }
+      if (shape !== "paw") { g.beginPath(); g.arc(-5, -5, 3.4, 0, Math.PI * 2); g.fillStyle = "rgba(255,255,255,0.55)"; g.fill(); }
+      g.restore();
+    }
     function drawTitleScreen() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
       
@@ -1554,22 +1601,11 @@
             resetCombo();
           }
 
-          ctx.beginPath();
-          ctx.arc(ball.x, ball.y, 18, 0, Math.PI * 2);
-          ctx.fillStyle = ball.laneKey === "left" ? th.L : th.R;
-          ctx.fill();
-          ctx.lineWidth = th.ballW;
-          ctx.strokeStyle = th.stroke;
-          ctx.stroke();
+          drawBallShape(ctx, ball.x, ball.y, ball.laneKey === "left" ? th.L : th.R, ballShape, ball.laneKey);
           if (th.glyph) {   // 色覚配慮: 色に頼らず「左/右」の文字でも見分けられる
             ctx.fillStyle = th.on; ctx.font = "bold 15px sans-serif"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
             ctx.fillText(ball.laneKey === "left" ? "左" : "右", ball.x, ball.y + 1);
           }
-          
-          ctx.beginPath();
-          ctx.arc(ball.x - 5, ball.y - 5, 5, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(255,255,255,0.6)";
-          ctx.fill();
         }
       });
 
@@ -2303,6 +2339,7 @@
       BAR = beatInterval * 4;
       BREAKS = (Array.isArray(sg.breakBars[0]) ? sg.breakBars : [sg.breakBars]).map(b => [BEAT_OFFSET + b[0] * BAR, BEAT_OFFSET + b[1] * BAR]);
       CHARTS = sg.charts();
+      if (lastDiffMap[sg.id] && DIFFS.indexOf(lastDiffMap[sg.id]) >= 0) { difficulty = lastDiffMap[sg.id]; document.querySelectorAll('.diff-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.d === difficulty)); }
       scheduleSongLoad();
       lastCT = -1;
       document.querySelectorAll(".song-btn").forEach(b => { const on = Number(b.dataset.i) === i; b.classList.toggle("active", on); if (on) b.dataset.act = "1"; else delete b.dataset.act; });
@@ -2316,8 +2353,9 @@
       const g = document.getElementById("songGroup");
       SONGS.forEach((sg, i) => {
         const b = document.createElement("button");
-        b.className = "song-btn"; b.dataset.i = String(i); b.innerHTML = '<span class="st"></span><span class="ss"></span><span class="sd"><i></i><i></i><i></i><i></i></span><span class="sr"></span>'; b.firstChild.textContent = "♪ " + sg.title;
+        b.className = "song-btn"; b.dataset.i = String(i); b.innerHTML = '<span class="st"></span><span class="ss"></span><span class="sd"><i></i><i></i><i></i><i></i></span><span class="sr"></span><span class="sl"></span>'; b.firstChild.textContent = "♪ " + sg.title;
         b.onclick = () => selectSong(i);
+        b.querySelector(".sl").textContent = "⏱ " + fmtLen(sg);
         g.appendChild(b);
       });
     })();
@@ -2332,6 +2370,9 @@
       Object.keys(THEMES).forEach(id => { const b = document.createElement("button"); b.className = "style-btn"; b.dataset.t = id; b.textContent = THEMES[id].name; b.onclick = () => setTheme(id); tb.appendChild(b); });
       [["standard", "標準"], ["perc", "パーカッション"], ["synth", "シンセ"], ["none", "なし"]].forEach(([id, nm]) => { const b = document.createElement("button"); b.className = "style-btn"; b.dataset.t = id; b.textContent = nm; b.onclick = () => setSeStyle(id, true); sb.appendChild(b); });
       setTheme(themeId); setSeStyle(seStyle, false); setSwapInput(swapInput);
+      const sb2 = document.getElementById("shapeBtns");
+      BALL_SHAPES.forEach(([id, nm]) => { const b = document.createElement("button"); b.className = "style-btn"; b.dataset.v = id; b.textContent = nm; b.onclick = () => setBallShape(id); sb2.appendChild(b); });
+      setBallShape(ballShape);
     })();
     (function () {   // iOSは audio.volume が効かない（常に1）。曲の音量スライダーを隠して端末の音量ボタンを案内
       try { const keep = bgm.volume; bgm.volume = 0.37; const ok = Math.abs(bgm.volume - 0.37) < 0.01; bgm.volume = keep;
