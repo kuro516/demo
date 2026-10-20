@@ -313,6 +313,7 @@
     body.m-play[data-theme="contrast"] canvas { background: #000; }
     body.m-play[data-theme="light"] canvas { background: #f2f4fa; }
     body.m-play[data-theme="cvd"] canvas { background: #1e1e2f; }
+    body[data-theme="sakura"] #tapGuide .mid, body[data-theme="mint"] #tapGuide .mid { background: rgba(0,0,0,.12); }
     body[data-theme="contrast"] #tapGuide .tg.l { background: linear-gradient(90deg, rgba(0,229,255,.16), rgba(0,229,255,0) 45%); }
     body[data-theme="contrast"] #tapGuide .tg.r { background: linear-gradient(270deg, rgba(255,234,0,.16), rgba(255,234,0,0) 45%); }
     body[data-theme="contrast"] #tapGuide .tg.l .lbl { color: #00e5ff; opacity: .8; } body[data-theme="contrast"] #tapGuide .tg.r .lbl { color: #ffea00; opacity: .8; }
@@ -433,8 +434,8 @@
         <canvas id="scenePrev" width="400" height="112" aria-label="見た目のプレビュー"></canvas>
         <div class="sec-title">設定</div>
         <div id="volGroup" class="vol-group">
-          <label class="vol-row">🎵 曲 <input type="range" id="volBgm" min="0" max="100" step="5" oninput="setVol('bgm', this.value)"><span class="val" id="volBgmVal">100%</span></label>
-          <label class="vol-row">🔔 効果音 <input type="range" id="volSe" min="0" max="100" step="5" oninput="setVol('se', this.value)" onchange="initAudioContext(); playSE('perfect')"><span class="val" id="volSeVal">100%</span></label>
+          <label class="vol-row">曲 <input type="range" id="volBgm" min="0" max="100" step="5" oninput="setVol('bgm', this.value)"><span class="val" id="volBgmVal">100%</span></label>
+          <label class="vol-row">効果音 <input type="range" id="volSe" min="0" max="100" step="5" oninput="setVol('se', this.value)" onchange="initAudioContext(); playSE('perfect')"><span class="val" id="volSeVal">100%</span></label>
           <div class="offset-hint vol-ios">iPhoneでは曲の音量は本体の音量ボタンで調整してください</div>
         </div>
         <div class="sec-title">背景・ボールの色</div>
@@ -457,7 +458,7 @@
             <span class="val" id="offsetVal">0 ms</span>
             <button class="off-btn" onclick="adjustOffset(5)">＋</button>
           </div>
-          <button class="off-btn" id="calBtn" style="width:auto;padding:6px 14px" onclick="startCalibration()">🎯 タップで自動計測</button>
+          <button class="off-btn" id="calBtn" style="width:auto;padding:6px 14px" onclick="startCalibration()">タップで自動計測</button>
           <div class="offset-hint" id="calHint">ボールが音より先に着く感じなら「＋」、遅い感じなら「−」</div>
         </div>
         <div class="menu-btns"><button class="main-btn sub" onclick="showView('menu')">← メインメニュー</button></div>
@@ -541,10 +542,18 @@
         fb: { p: "#ff007f", gr: "#ffb300", g: "#00e676", m: "#aaaaaa" } },
       contrast: { name: "ハイコントラスト", bg: "#000000", text: "#ffffff", sub: "#ffffff", lane: "#ffffff", laneA: 0.35, hit: "#ffffff", hitA: 0.9, tosser: "#707070", L: "#00e5ff", R: "#ffea00", stroke: "#ffffff", on: "#000000", combo: "#ffea00", fever: "#ffffff", ballW: 4, glyph: false,
         fb: { p: "#ff6eb4", gr: "#ffd740", g: "#69f0ae", m: "#d0d0d0" } },
-      light: { name: "ライト", bg: "#f2f4fa", text: "#1b1b2f", sub: "#444466", lane: "#000000", laneA: 0.18, hit: "#000000", hitA: 0.5, tosser: "#b9bfd3", L: "#0277bd", R: "#c62828", stroke: "#1b1b2f", on: "#ffffff", combo: "#e65100", fever: "#d84315", ballW: 3, glyph: false,
+      light: { name: "ライト", isLight: true, bg: "#f2f4fa", text: "#1b1b2f", sub: "#444466", lane: "#000000", laneA: 0.18, hit: "#000000", hitA: 0.5, tosser: "#b9bfd3", L: "#0277bd", R: "#c62828", stroke: "#1b1b2f", on: "#ffffff", combo: "#e65100", fever: "#d84315", ballW: 3, glyph: false,
         fb: { p: "#c2185b", gr: "#e65100", g: "#2e7d32", m: "#555555" } },
       cvd: { name: "色覚配慮", bg: "#1e1e2f", text: "#ffffff", sub: "#c8c8e6", lane: "#ffffff", laneA: 0.12, hit: "#ffffff", hitA: 0.4, tosser: "#3a3a58", L: "#56b4e9", R: "#e69f00", stroke: "#ffffff", on: "#111111", combo: "#f0e442", fever: "#f0e442", ballW: 3, glyph: false,
-        fb: { p: "#cc79a7", gr: "#f0e442", g: "#009e73", m: "#aaaaaa" } }
+        fb: { p: "#cc79a7", gr: "#f0e442", g: "#009e73", m: "#aaaaaa" } },
+      sakura: { name: "さくら", custom: true, isLight: true, bg: "#fff3f7", text: "#5b2a45", sub: "#8d5c78", lane: "#c25a86", laneA: 0.2, hit: "#d6457a", hitA: 0.55, tosser: "#f4cfdd", L: "#ff6b9d", R: "#3fb5a5", stroke: "#6b2e4c", on: "#ffffff", combo: "#d6457a", fever: "#ff3d8a", ballW: 3, glyph: false,
+        fb: { p: "#d81b60", gr: "#ef6c00", g: "#2e9e6b", m: "#8a7a85" } },
+      mint: { name: "ミント", custom: true, isLight: true, bg: "#effaf5", text: "#1d4a40", sub: "#4f7f73", lane: "#2e8f7a", laneA: 0.2, hit: "#1f8f78", hitA: 0.55, tosser: "#c8e9de", L: "#2bb39b", R: "#7b4a3a", stroke: "#1d4a40", on: "#ffffff", combo: "#e65100", fever: "#ff7043", ballW: 3, glyph: false,
+        fb: { p: "#ad1457", gr: "#e65100", g: "#2e7d32", m: "#6b8a82" } },
+      yuuyake: { name: "ゆうやけ", custom: true, bg: "#2a1a33", text: "#fff4e6", sub: "#e6c4d6", lane: "#ffd9b0", laneA: 0.14, hit: "#ffd9b0", hitA: 0.4, tosser: "#4a2b4a", L: "#ffcf5c", R: "#ff6f91", stroke: "#fff4e6", on: "#2a1a33", combo: "#ffcf5c", fever: "#ffe082", ballW: 3, glyph: false,
+        fb: { p: "#ff80ab", gr: "#ffd54f", g: "#80e27e", m: "#b79aa8" } },
+      hoshizora: { name: "ほしぞら", custom: true, bg: "#150c3d", text: "#f1eeff", sub: "#c4b8f0", lane: "#b8a6ff", laneA: 0.18, hit: "#d9cfff", hitA: 0.45, tosser: "#2c2260", L: "#f4f6ff", R: "#8f6bff", stroke: "#cfc6ff", on: "#150c3d", combo: "#ffe9a8", fever: "#ffffff", ballW: 3, glyph: false,
+        fb: { p: "#ff9de0", gr: "#ffe9a8", g: "#7af0c0", m: "#a89fd0" } }
     };
     let themeId = "midnight";
     try { const t = localStorage.getItem("popcatch-theme"); if (THEMES[t]) themeId = t; } catch (e) {}
@@ -559,6 +568,10 @@
       try { localStorage.setItem("popcatch-theme", id); } catch (e) {}
       document.querySelectorAll("#themeBtns .style-btn").forEach(b => b.classList.toggle("active", b.dataset.t === id));
       if (typeof applySwapGuide === "function" && typeof swapInput !== "undefined") applySwapGuide();
+      try {
+        let st = document.getElementById("themeCss"); if (!st) { st = document.createElement("style"); st.id = "themeCss"; document.head.appendChild(st); }
+        st.textContent = "body.m-play canvas { background: " + TH.bg + "; }";
+      } catch (e) {}
       try { drawScenePrev(); } catch (e) {}
       const pv = document.getElementById("themePrev");
       if (pv) { pv.style.background = TH.bg; pv.style.setProperty("--l", TH.L); pv.style.setProperty("--r", TH.R); pv.style.setProperty("--st", TH.stroke); pv.style.setProperty("--tx", TH.text); pv.style.setProperty("--on", TH.on); pv.dataset.glyph = TH.glyph ? "1" : ""; }
@@ -581,7 +594,7 @@
       const l = g.querySelector(".tg.l"), r = g.querySelector(".tg.r");
       const lc = swapInput ? TH.R : TH.L, rc = swapInput ? TH.L : TH.R;
       const grad = (dir, c) => "linear-gradient(" + dir + ", " + rgbaOf(c, .12) + ", " + rgbaOf(c, 0) + " 45%)";
-      if (swapInput) {
+      if (swapInput || TH.custom) {
         l.style.background = grad("90deg", lc); r.style.background = grad("270deg", rc);
         l.querySelector(".lbl").style.color = lc; r.querySelector(".lbl").style.color = rc;
         
@@ -600,7 +613,7 @@
         : '🔵 <b>左手:</b> <span class="key-guide blue-key">A</span> キー / 上半分クリック　🔴 <b>右手:</b> <span class="key-guide red-key">L</span> または <span class="key-guide red-key">J</span> キー / 下半分クリック';
     }
     let seStyle = "standard";
-    try { const t = localStorage.getItem("popcatch-se-style"); if (["standard", "perc", "synth", "none"].indexOf(t) >= 0) seStyle = t; } catch (e) {}
+    try { const t = localStorage.getItem("popcatch-se-style"); if (["standard", "perc", "synth", "bell", "bubble", "punit", "marimba", "chip", "none"].indexOf(t) >= 0) seStyle = t; } catch (e) {}
     function setSeStyle(id, preview) {
       seStyle = id;
       try { localStorage.setItem("popcatch-se-style", id); } catch (e) {}
@@ -627,6 +640,66 @@
       g.gain.setValueAtTime(vol, t0); g.gain.exponentialRampToValueAtTime(0.01, t0 + dur);
       src.connect(f); f.connect(g); g.connect(seDest()); src.start(t0); src.stop(t0 + dur + 0.02);
     }
+
+    // ---- 追加の効果音（きらきら / ぽよん / ぷにっ / 木琴 / 8ビット）----
+    // 音の立ち上がりを数msかけて、プチッというノイズを防ぐ
+    function envOsc(o, t0, dur, vol, atk) {
+      const g = audioCtx.createGain(); atk = atk || 0.004;
+      g.gain.setValueAtTime(0.0001, t0); g.gain.exponentialRampToValueAtTime(vol, t0 + atk); g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur);
+      o.connect(g); g.connect(seDest()); o.start(t0); o.stop(t0 + dur + 0.03);
+    }
+    function partials(f, t0, dur, vol, list, type) {   // list: [[倍音比, 音量比, 長さ比], ...]
+      list.forEach(([r, a, d]) => { const o = audioCtx.createOscillator(); o.type = type || "sine"; o.frequency.setValueAtTime(f * r, t0); envOsc(o, t0, dur * d, vol * a); });
+    }
+    const bell = (f, t0, vol) => partials(f, t0, 0.55, vol * 0.78, [[1, 1, 1], [2.76, 0.32, 0.55], [5.4, 0.14, 0.3]]);
+    const marimba = (f, t0, vol) => partials(f, t0, 0.28, vol * 0.55, [[1, 1, 1], [3.92, 0.35, 0.35], [9.2, 0.08, 0.15]]);
+    function glide(f0, f1, t0, dur, vol, type) {   // なめらかに音程が動く短い音
+      const o = audioCtx.createOscillator(); o.type = type || "sine"; o.frequency.setValueAtTime(f0, t0); o.frequency.exponentialRampToValueAtTime(f1, t0 + dur * 0.85); envOsc(o, t0, dur, vol, 0.005);
+    }
+    let pulseWave = null;
+    function pulse25() {
+      if (!pulseWave) { const n = 24, re = new Float32Array(n + 1), im = new Float32Array(n + 1); for (let k = 1; k <= n; k++) re[k] = 2 / (k * Math.PI) * Math.sin(k * Math.PI * 0.25); pulseWave = audioCtx.createPeriodicWave(re, im); }
+      return pulseWave;
+    }
+    function chipNote(f, t0, dur, vol, kind) {
+      vol *= 2.2;   // 矩形波は聞こえ方が小さいので持ち上げる
+      const o = audioCtx.createOscillator(); if (kind === "tri") o.type = "triangle"; else o.setPeriodicWave(pulse25());
+      o.frequency.setValueAtTime(f, t0); envOsc(o, t0, dur, vol, 0.002);
+    }
+    function playSEExtra(type) {
+      const now = audioCtx.currentTime;
+      if (seStyle === "bell") {
+        if (type === "perfect") { bell(2093, now, 0.2); bell(3136, now + 0.05, 0.17); }
+        else if (type === "great") { bell(1760, now, 0.19); bell(2349, now + 0.045, 0.14); }
+        else if (type === "good") { bell(1319, now, 0.18); }
+        else if (type === "fever") { [1047, 1319, 1568, 2093].forEach((f, i) => bell(f, now + i * 0.06, 0.18)); }
+        else if (type === "miss") { glide(330, 190, now, 0.18, 0.22); }
+      } else if (seStyle === "bubble") {
+        if (type === "perfect") { glide(520, 1250, now, 0.08, 0.34); glide(700, 1500, now + 0.06, 0.07, 0.22); }
+        else if (type === "great") { glide(450, 1000, now, 0.08, 0.32); }
+        else if (type === "good") { glide(360, 680, now, 0.09, 0.3); }
+        else if (type === "fever") { [0, 1, 2, 3].forEach(i => glide(500 + i * 140, 1100 + i * 220, now + i * 0.065, 0.075, 0.28)); }
+        else if (type === "miss") { glide(300, 110, now, 0.2, 0.34); }
+      } else if (seStyle === "punit") {
+        if (type === "perfect") { glide(340, 220, now, 0.1, 0.5); click(700, 1, now, 0.035, 0.18); }
+        else if (type === "great") { glide(300, 195, now, 0.1, 0.46); click(600, 1, now, 0.03, 0.14); }
+        else if (type === "good") { glide(255, 170, now, 0.11, 0.42); }
+        else if (type === "fever") { [262, 330, 392, 523].forEach((f, i) => glide(f * 1.06, f, now + i * 0.065, 0.1, 0.34, "triangle")); }
+        else if (type === "miss") { glide(130, 85, now, 0.2, 0.5); }
+      } else if (seStyle === "marimba") {
+        if (type === "perfect") { marimba(1047, now, 0.42); marimba(1319, now + 0.05, 0.3); }
+        else if (type === "great") { marimba(880, now, 0.4); marimba(1047, now + 0.045, 0.26); }
+        else if (type === "good") { marimba(659, now, 0.4); }
+        else if (type === "fever") { [523, 659, 784, 1047].forEach((f, i) => marimba(f, now + i * 0.06, 0.38)); }
+        else if (type === "miss") { marimba(196, now, 0.55); }
+      } else if (seStyle === "chip") {
+        if (type === "perfect") { chipNote(1568, now, 0.05, 0.16); chipNote(2093, now + 0.05, 0.13, 0.16); }
+        else if (type === "great") { chipNote(1319, now, 0.05, 0.15); chipNote(1568, now + 0.05, 0.1, 0.15); }
+        else if (type === "good") { chipNote(1047, now, 0.09, 0.15); }
+        else if (type === "fever") { [523, 659, 784, 1047, 1319, 1568].forEach((f, i) => chipNote(f, now + i * 0.04, 0.07, 0.14)); }
+        else if (type === "miss") { chipNote(220, now, 0.28, 0.13, "tri"); click(1200, 0.7, now, 0.06, 0.18); }
+      }
+    }
     function playSE(type) {
       if (!audioCtx || seStyle === "none") return;
       const now = audioCtx.currentTime;
@@ -646,6 +719,7 @@
         else if (type === "miss") { tone("sawtooth", 196, 98, now, 0.18, 0.16); }
         return;
       }
+      if (seStyle !== "standard") { playSEExtra(type); return; }
       playSEStandard(type);
     }
     function playSEStandard(type) {
@@ -929,7 +1003,11 @@
     let dropFired = {}, dropStart = -99;
     const smooth = (x) => { x = Math.min(1, Math.max(0, x)); return x * x * (3 - 2 * x); };
     function breakLevel(t) {   // 0=通常 1=ブレイクダウン全開
-      for (const [bs, be] of BREAKS) { if (t >= bs && t < be) return smooth((t - bs) / 1.3); }
+      for (const [bs, be] of BREAKS) {
+        if (t >= bs && t < be) return smooth((t - bs) / 1.3);
+        // 明るい背景のテーマは、ブレイクダウンが終わるとき急に明るくなって眩しいので、ゆっくり戻す
+        if (TH.isLight && t >= be && t < be + 1.2) return smooth((be - bs) / 1.3) * (1 - smooth((t - be) / 1.2));
+      }
       return 0;
     }
     function drawBreakdownBack(t) {
@@ -937,7 +1015,7 @@
       if (lv <= 0) return;
       ctx.save();
       // 暗転（青みがかった夜）。ライトテーマは画面を暗くせず、淡い藍色に染めて星を濃い色で描く
-      const lt = themeId === "light";
+      const lt = !!TH.isLight;
       ctx.fillStyle = lt ? `rgba(92,110,185,${0.30 * lv})` : `rgba(6,10,38,${0.62 * lv})`;
       ctx.fillRect(-10, -10, W + 20, H + 20);
       // ゆっくり流れる星
@@ -1165,6 +1243,7 @@
           vy: (Math.random() - 0.5) * 8,
           size: Math.random() * 5 + 3,
           color: color,
+          rot: Math.random() * 6.283, vr: (Math.random() - 0.5) * 0.3,
           life: 20
         });
       }
@@ -1428,7 +1507,7 @@
 
 
     // ===== ボールの形（設定で変更） =====
-    const BALL_SHAPES = [["circle", "● 丸"], ["star", "⭐ 星"], ["heart", "❤ ハート"], ["paw", "🐾 肉球"]];
+    const BALL_SHAPES = [["circle", "丸"], ["star", "星"], ["heart", "ハート"], ["paw", "肉球"]];
     let ballShape = "circle";
     try { const v = localStorage.getItem("popcatch-ballshape"); if (BALL_SHAPES.some(x => x[0] === v)) ballShape = v; } catch (e) {}
     function setBallShape(v) {
@@ -1451,10 +1530,10 @@
         g.fillStyle = th.text; g.font = "bold 14px sans-serif"; g.textAlign = "right"; g.textBaseline = "alphabetic"; g.fillText("SCORE: 1200", W - 10, 17);
       } catch (e) {}
     }
-    function drawBallShape(g, x, y, color, shape, laneKey) {
+    function drawBallShape(g, x, y, color, shape, laneKey, plain) {
       g.save(); g.translate(x, y); g.lineJoin = "round"; g.lineCap = "round";
       g.fillStyle = color; g.strokeStyle = TH.stroke; g.lineWidth = Math.max(2, TH.ballW);
-      const fs = () => { g.fill(); g.stroke(); };
+      const fs = plain ? () => { g.fill(); } : () => { g.fill(); g.stroke(); };
       let face = false;
       if (shape === "cat") {
         [[-1], [1]].forEach(([sg]) => { g.beginPath(); g.moveTo(sg * 16, -5); g.lineTo(sg * 13, -21); g.lineTo(sg * 3, -13); g.closePath(); fs(); });
@@ -1470,12 +1549,12 @@
         [[-12.5, -2.5], [-5, -11.5], [5, -11.5], [12.5, -2.5]].forEach(([a, b]) => { g.beginPath(); g.ellipse(a, b, 4.8, 5.6, 0, 0, Math.PI * 2); fs(); });
         g.beginPath(); g.ellipse(0, 7, 11.5, 9, 0, 0, Math.PI * 2); fs();
       } else { g.beginPath(); g.arc(0, 0, 18, 0, Math.PI * 2); fs(); }
-      if (face && !TH.glyph) {   // ちいさなお顔
+      if (face && !TH.glyph && !plain) {   // ちいさなお顔
         g.fillStyle = TH.on || "#222"; const fy = shape === "rabbit" ? 4 : 1;
         g.beginPath(); g.arc(-5.5, fy, 1.9, 0, Math.PI * 2); g.arc(5.5, fy, 1.9, 0, Math.PI * 2); g.fill();
         g.beginPath(); g.moveTo(-2.2, fy + 5); g.quadraticCurveTo(0, fy + 8, 2.2, fy + 5); g.lineWidth = 1.5; g.strokeStyle = TH.on || "#222"; g.stroke();
       }
-      if (shape !== "paw") { g.beginPath(); g.arc(-5, -5, 3.4, 0, Math.PI * 2); g.fillStyle = "rgba(255,255,255,0.55)"; g.fill(); }
+      if (shape !== "paw" && !plain) { g.beginPath(); g.arc(-5, -5, 3.4, 0, Math.PI * 2); g.fillStyle = "rgba(255,255,255,0.55)"; g.fill(); }
       g.restore();
     }
     function drawTitleScreen() {
@@ -1635,10 +1714,18 @@
         p.x += p.vx;
         p.y += p.vy;
         p.life--;
-        ctx.fillStyle = p.color;
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size * (p.life / 20), 0, Math.PI * 2);
-        ctx.fill();
+        const pr = p.size * (p.life / 20);
+        if (ballShape === "circle" || p.rot === undefined) {
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, pr, 0, Math.PI * 2);
+          ctx.fill();
+        } else {   // ボールの形に合わせて、星・ハート・肉球がはじける
+          p.rot += p.vr;
+          ctx.save(); ctx.translate(p.x, p.y); ctx.rotate(p.rot); ctx.scale(pr / 8, pr / 8);
+          drawBallShape(ctx, 0, 0, p.color, ballShape, "left", true);
+          ctx.restore();
+        }
       });
       particles = particles.filter(p => p.life > 0);
 
@@ -2387,7 +2474,7 @@
     (function buildThemeUI() {
       const tb = document.getElementById("themeBtns"), sb = document.getElementById("seBtns");
       Object.keys(THEMES).forEach(id => { const b = document.createElement("button"); b.className = "style-btn"; b.dataset.t = id; b.textContent = THEMES[id].name; b.onclick = () => setTheme(id); tb.appendChild(b); });
-      [["standard", "標準"], ["perc", "パーカッション"], ["synth", "シンセ"], ["none", "なし"]].forEach(([id, nm]) => { const b = document.createElement("button"); b.className = "style-btn"; b.dataset.t = id; b.textContent = nm; b.onclick = () => setSeStyle(id, true); sb.appendChild(b); });
+      [["standard", "標準"], ["perc", "パーカッション"], ["synth", "シンセ"], ["bell", "きらきら"], ["bubble", "ぽよん"], ["punit", "ぷにっ"], ["marimba", "木琴"], ["chip", "8ビット"], ["none", "なし"]].forEach(([id, nm]) => { const b = document.createElement("button"); b.className = "style-btn"; b.dataset.t = id; b.textContent = nm; b.onclick = () => setSeStyle(id, true); sb.appendChild(b); });
       setTheme(themeId); setSeStyle(seStyle, false); setSwapInput(swapInput);
       const sb2 = document.getElementById("shapeBtns");
       BALL_SHAPES.forEach(([id, nm]) => { const b = document.createElement("button"); b.className = "style-btn"; b.dataset.v = id; b.textContent = nm; b.onclick = () => setBallShape(id); sb2.appendChild(b); });
