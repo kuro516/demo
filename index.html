@@ -1507,7 +1507,7 @@
 
 
     // ===== ボールの形（設定で変更） =====
-    const BALL_SHAPES = [["circle", "丸"], ["star", "星"], ["heart", "ハート"], ["paw", "肉球"]];
+    const BALL_SHAPES = [["circle", "丸"], ["star", "星"], ["heart", "ハート"], ["paw", "肉球"], ["note", "音符"], ["sakura", "さくら"], ["moon", "三日月"], ["fish", "魚"]];
     let ballShape = "circle";
     try { const v = localStorage.getItem("popcatch-ballshape"); if (BALL_SHAPES.some(x => x[0] === v)) ballShape = v; } catch (e) {}
     function setBallShape(v) {
@@ -1548,13 +1548,37 @@
       } else if (shape === "paw") {
         [[-12.5, -2.5], [-5, -11.5], [5, -11.5], [12.5, -2.5]].forEach(([a, b]) => { g.beginPath(); g.ellipse(a, b, 4.8, 5.6, 0, 0, Math.PI * 2); fs(); });
         g.beginPath(); g.ellipse(0, 7, 11.5, 9, 0, 0, Math.PI * 2); fs();
+      } else if (shape === "note" || shape === "sakura" || shape === "moon" || shape === "fish") {
+        // 複数のパーツを1つのシルエットとして描く: 先に太い縁取りをぜんぶ描き、その上から塗りをぜんぶ重ねる（パーツの境目に線が出ない）
+        let parts = [], after = null;
+        if (shape === "note") {
+          parts = [() => { g.beginPath(); g.moveTo(3, -16); g.bezierCurveTo(4, -6, 15, -9, 12, 3); g.lineTo(8.5, 3); g.bezierCurveTo(10, -4, 5, -5, 3, -5); g.closePath(); },
+                   () => { g.beginPath(); g.rect(1, -17, 4.6, 27); },
+                   () => { g.beginPath(); g.ellipse(-3.5, 10, 9, 6.4, -0.42, 0, Math.PI * 2); }];
+        } else if (shape === "sakura") {
+          for (let i = 0; i < 5; i++) { const a = -Math.PI / 2 + i * Math.PI * 2 / 5; parts.push(() => { g.beginPath(); g.arc(10.2 * Math.cos(a), 10.2 * Math.sin(a), 8.6, 0, Math.PI * 2); }); }
+          parts.push(() => { g.beginPath(); g.arc(0, 0, 9, 0, Math.PI * 2); });
+          after = () => { g.fillStyle = "rgba(255,255,255,0.75)"; g.beginPath(); g.arc(0, 0, 3.6, 0, Math.PI * 2); g.fill(); };
+        } else if (shape === "moon") {
+          g.rotate(-0.4); g.translate(-3, 0);
+          parts = [() => { g.beginPath(); g.arc(0, 0, 17, -1.019, 1.019, true); g.arc(8, 0, 14.5, 1.507, 4.776, false); g.closePath(); }];
+        } else {
+          g.rotate(-0.12); g.scale(1.15, 1.15);
+          parts = [() => { g.beginPath(); g.moveTo(7, 0); g.lineTo(18, -9.5); g.lineTo(16, 0); g.lineTo(18, 9.5); g.closePath(); },
+                   () => { g.beginPath(); g.ellipse(-3, 0, 14, 9, 0, 0, Math.PI * 2); },
+                   () => { g.beginPath(); g.moveTo(-3, -7); g.lineTo(2, -14); g.lineTo(5, -6); g.closePath(); }];
+          after = () => { if (!plain) { g.fillStyle = "#222"; g.beginPath(); g.arc(-9.5, -1.5, 1.9, 0, Math.PI * 2); g.fill(); g.strokeStyle = "rgba(0,0,0,.25)"; g.lineWidth = 1.2; g.beginPath(); g.arc(-4.5, 0, 6.5, -0.9, 0.9); g.stroke(); } };
+        }
+        if (!plain) { g.lineWidth = Math.max(2, TH.ballW) * 2; g.strokeStyle = TH.stroke; parts.forEach(fn => { fn(); g.stroke(); }); }
+        g.fillStyle = color; parts.forEach(fn => { fn(); g.fill(); });
+        if (after) after();
       } else { g.beginPath(); g.arc(0, 0, 18, 0, Math.PI * 2); fs(); }
       if (face && !TH.glyph && !plain) {   // ちいさなお顔
         g.fillStyle = TH.on || "#222"; const fy = shape === "rabbit" ? 4 : 1;
         g.beginPath(); g.arc(-5.5, fy, 1.9, 0, Math.PI * 2); g.arc(5.5, fy, 1.9, 0, Math.PI * 2); g.fill();
         g.beginPath(); g.moveTo(-2.2, fy + 5); g.quadraticCurveTo(0, fy + 8, 2.2, fy + 5); g.lineWidth = 1.5; g.strokeStyle = TH.on || "#222"; g.stroke();
       }
-      if (shape !== "paw" && !plain) { g.beginPath(); g.arc(-5, -5, 3.4, 0, Math.PI * 2); g.fillStyle = "rgba(255,255,255,0.55)"; g.fill(); }
+      if (["circle", "star", "heart", "cat", "rabbit"].indexOf(shape) >= 0 && !plain) { g.beginPath(); g.arc(-5, -5, 3.4, 0, Math.PI * 2); g.fillStyle = "rgba(255,255,255,0.55)"; g.fill(); }
       g.restore();
     }
     function drawTitleScreen() {
