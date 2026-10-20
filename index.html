@@ -244,6 +244,9 @@
     .style-btn.active { border-color: #ffca28; background: #ffca28; color: #3a2600; box-shadow: 0 0 10px rgba(255,202,40,.4); }
     .style-desc { font-size: 11px; color: #9a91b5; min-height: 14px; }
     body.mobile .controls { flex-direction: column; flex-wrap: nowrap; align-items: stretch; }
+    /* 画面が低いとき、中央寄せのままだと上側がはみ出してスクロールできず切れる → 余白があるときだけ中央、足りないときは上から並べる */
+    body.mobile .controls { justify-content: flex-start; }
+    body.mobile .controls > #menuViews { margin-top: auto; margin-bottom: auto; flex: none; }
     body.mobile #titleBg { flex: none; }
     body.mobile.has-title-img.m-title .m-howto { display: none; }
     /* スマホのメインメニュー: 画像を隠さないよう、ボタンだけを下に重ねる */
@@ -348,6 +351,7 @@
       body.mobile #calBtn { padding: 3px 12px !important; font-size: 12px !important; }
       body.mobile .set-row { gap: 4px; }
     }
+    @media (max-height: 360px) { #shapePrev { width: 150px !important; height: 45px !important; margin-top: 2px !important; } }
     @media (max-height: 310px) {
       body.mobile #themePrev { display: none; }
       body.mobile .controls { padding: 3px 10px; }
