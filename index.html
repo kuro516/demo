@@ -323,6 +323,8 @@
     body[data-theme="light"] #tapGuide .tg.r { background: linear-gradient(270deg, rgba(198,40,40,.10), rgba(198,40,40,0) 45%); }
     body[data-theme="light"] #tapGuide .tg.l .lbl { color: #0277bd; } body[data-theme="light"] #tapGuide .tg.r .lbl { color: #c62828; }
     body[data-theme="light"] #tapGuide .mid { background: rgba(0,0,0,.12); }
+    #scenePrev { position: sticky; top: 0; z-index: 6; width: 300px; height: 84px; border: 2px solid #5a5190 !important; border-radius: 10px; box-shadow: 0 3px 8px rgba(0,0,0,.45) !important; background: #1e1e2f; flex: none; }
+    body.mobile #scenePrev { width: 200px; height: 56px; }
     #themePrev { position: relative; width: 190px; height: 56px; border-radius: 10px; border: 2px solid #555; box-sizing: border-box; background: #1e1e2f; overflow: hidden; }
     #themePrev i { position: absolute; top: 14px; width: 24px; height: 24px; border-radius: 50%; border: 3px solid var(--st, #fff); box-sizing: border-box; font-style: normal; font-size: 11px; font-weight: bold; line-height: 18px; text-align: center; color: var(--on, #fff); }
     #themePrev i.a { left: 22px; background: var(--l, #29b6f6); } #themePrev i.b { left: 70px; background: var(--r, #ff5252); }
@@ -353,7 +355,6 @@
     }
     @media (max-height: 360px) { #shapePrev { width: 150px !important; height: 45px !important; margin-top: 2px !important; } }
     @media (max-height: 310px) {
-      body.mobile #themePrev { display: none; }
       body.mobile .controls { padding: 3px 10px; }
       body.mobile #viewSettings .main-btn.sub { padding: 3px 14px !important; }
     }
@@ -429,6 +430,7 @@
 
       <!-- ③ 設定 -->
       <div class="view" id="viewSettings">
+        <canvas id="scenePrev" width="400" height="112" aria-label="見た目のプレビュー"></canvas>
         <div class="sec-title">設定</div>
         <div id="volGroup" class="vol-group">
           <label class="vol-row">🎵 曲 <input type="range" id="volBgm" min="0" max="100" step="5" oninput="setVol('bgm', this.value)"><span class="val" id="volBgmVal">100%</span></label>
@@ -437,7 +439,6 @@
         </div>
         <div class="sec-title">背景・ボールの色</div>
         <div class="set-row" id="themeBtns"></div>
-        <div id="themePrev"><i class="a"></i><i class="b"></i><span>SCORE</span></div>
         <div class="sec-title">ボタン・タッチの左右</div>
         <div class="set-row" id="swapBtns">
           <button class="style-btn active" data-v="0" onclick="setSwapInput(false)">ふつう</button>
@@ -446,7 +447,6 @@
         <div class="offset-hint">ふつう: 左手（Aキー・画面の左側）＝上のレーン、右手（Lキー・右側）＝下のレーン<br>反転: 右手（Lキー・画面の右側）＝上のレーン、左手（Aキー・左側）＝下のレーン（ピアノ譜のように右手が上）</div>
         <div class="sec-title">ボールの形</div>
         <div class="set-row" id="shapeBtns"></div>
-        <canvas id="shapePrev" width="200" height="60" style="display:block;margin:6px auto 0;border:0;box-shadow:none;background:none;width:200px;height:60px"></canvas>
         <div class="offset-hint">ボールの見た目だけが変わります（青＝上のレーン／赤＝下のレーンの色はそのまま）</div>
         <div class="sec-title">効果音の種類</div>
         <div class="set-row" id="seBtns"></div>
@@ -559,6 +559,7 @@
       try { localStorage.setItem("popcatch-theme", id); } catch (e) {}
       document.querySelectorAll("#themeBtns .style-btn").forEach(b => b.classList.toggle("active", b.dataset.t === id));
       if (typeof applySwapGuide === "function" && typeof swapInput !== "undefined") applySwapGuide();
+      try { drawScenePrev(); } catch (e) {}
       const pv = document.getElementById("themePrev");
       if (pv) { pv.style.background = TH.bg; pv.style.setProperty("--l", TH.L); pv.style.setProperty("--r", TH.R); pv.style.setProperty("--st", TH.stroke); pv.style.setProperty("--tx", TH.text); pv.style.setProperty("--on", TH.on); pv.dataset.glyph = TH.glyph ? "1" : ""; }
     }
@@ -1434,7 +1435,21 @@
       ballShape = v;
       try { localStorage.setItem("popcatch-ballshape", v); } catch (e) {}
       document.querySelectorAll("#shapeBtns .style-btn").forEach(b => b.classList.toggle("active", b.dataset.v === v));
-      const c = document.getElementById("shapePrev"); if (c) { const g = c.getContext("2d"); g.clearRect(0, 0, c.width, c.height); [["left", 60], ["right", 140]].forEach(([k, x]) => drawBallShape(g, x, 30, k === "left" ? TH.L : TH.R, v, k)); }
+      drawScenePrev();
+    }
+
+    function drawScenePrev() {   // 設定画面のプレビュー（背景・ボールの色・形を、ゲーム画面のミニ版で見られる）
+      const c = document.getElementById("scenePrev"); if (!c || typeof drawBallShape !== "function") return;
+      try {
+        const g = c.getContext("2d"), th = TH, W = c.width, H = c.height;
+        g.clearRect(0, 0, W, H); g.fillStyle = th.bg; g.fillRect(0, 0, W, H);
+        g.lineWidth = 2; g.strokeStyle = rgbaOf(th.lane, th.laneA); g.beginPath(); g.moveTo(0, H / 2); g.lineTo(W, H / 2); g.stroke();
+        g.strokeStyle = rgbaOf(th.hit, th.hitA); g.lineWidth = 3; g.setLineDash([7, 5]); g.beginPath(); g.moveTo(74, 0); g.lineTo(74, H); g.stroke(); g.setLineDash([]);
+        g.fillStyle = th.tosser; g.fillRect(366, 22, 16, 26); g.fillRect(366, 64, 16, 26);
+        [[74, 36, th.L, "左"], [74, 78, th.R, "右"]].forEach(([x, y, col, t]) => { g.beginPath(); g.arc(x, y, 18, 0, Math.PI * 2); g.fillStyle = col; g.fill(); g.lineWidth = th.ballW; g.strokeStyle = th.stroke; g.stroke(); if (th.glyph) { g.fillStyle = th.on; g.font = "bold 15px sans-serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(t, x, y + 1); } });
+        [[160, 26, th.L, "left"], [235, 72, th.R, "right"], [305, 30, th.L, "left"]].forEach(([x, y, col, k]) => { g.save(); g.translate(x, y); g.scale(0.9, 0.9); drawBallShape(g, 0, 0, col, ballShape, k); g.restore(); });
+        g.fillStyle = th.text; g.font = "bold 14px sans-serif"; g.textAlign = "right"; g.textBaseline = "alphabetic"; g.fillText("SCORE: 1200", W - 10, 17);
+      } catch (e) {}
     }
     function drawBallShape(g, x, y, color, shape, laneKey) {
       g.save(); g.translate(x, y); g.lineJoin = "round"; g.lineCap = "round";
