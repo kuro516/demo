@@ -445,6 +445,7 @@
       <div class="view" id="viewStory">
         <div class="sec-title">📖 ジャグルノーツ 〜笑顔の奏者〜</div>
         <div class="st-status" id="stStatus"></div>
+        <div id="stTest" style="margin:6px 0;padding:8px;border:1px dashed #ff9;border-radius:8px;font-size:13px">🧪テスト用　レベル：<select id="stTestLv"></select> クリア済み：<select id="stTestDone"></select> <button class="style-btn" id="stTestReset" style="margin-left:8px">進行リセット</button><div style="margin-top:4px;opacity:.8">※クリア済みにした話の特典は設定で選べます。初回クリアの表示を見たい話は、その1つ前までにしてください。</div></div>
         <div class="st-bar"><i id="stBar"></i></div>
         <div class="sec-title">おたすけ</div>
         <div class="st-sup" id="stSup"></div>
@@ -631,11 +632,11 @@
       // ---- ストーリーのクリア特典（unlock = その話をクリアすると設定で選べる） ----
       haiiro: { name: "はいいろ", custom: true, unlock: 10, bg: "#3a3a42", text: "#f0f0f4", sub: "#b8b8c4", lane: "#d0d0da", laneA: 0.14, hit: "#ffffff", hitA: 0.45, tosser: "#52525e", L: "#ff7a45", R: "#38c6ff", stroke: "#2a2a30", on: "#2a2a30", combo: "#ffd54f", fever: "#ff6bd6", ballW: 3, glyph: false,
         fb: { p: "#ff9de0", gr: "#ffd54f", g: "#7af0c0", m: "#9a9aa6" } },
-      ashita: { name: "あすの星", custom: true, unlock: 11, bg: "#0e2b36", text: "#eafff8", sub: "#a8d8cc", lane: "#bff3e6", laneA: 0.16, hit: "#e6fff8", hitA: 0.5, tosser: "#1f4452", L: "#7fe9d6", R: "#ffb347", stroke: "#e6fff8", on: "#0e2b36", combo: "#ffd36e", fever: "#ffffff", ballW: 3, glyph: false,
-        fb: { p: "#9ffbe6", gr: "#ffd36e", g: "#8ae0ff", m: "#8fb0b0" } }
+      ashita: { name: "あしたの星", custom: true, unlock: 11, bg: "#1a1240", text: "#fff6e0", sub: "#e8d4b8", lane: "#ffd9a0", laneA: 0.16, hit: "#ffe2a8", hitA: 0.5, tosser: "#34265e", L: "#ffd870", R: "#ff93b8", stroke: "#fff1cf", on: "#1a1240", combo: "#ffd870", fever: "#fff4d0", ballW: 3, glyph: false,
+        fb: { p: "#ffb3d0", gr: "#ffe08a", g: "#8af0c8", m: "#b8a6c8" } }
     };
     // クリア特典の解放判定（ストーリーの記録を直接読む）
-    function rewardDone(n) { if (!n) return true; try { const o = JSON.parse(localStorage.getItem("jn-story") || "null"); return !!(o && o.done && o.done[n]); } catch (e) { return false; } }
+    function rewardDone(n) { if (!n) return true; try { const o = JSON.parse(localStorage.getItem("jn-story-test") || "null"); return !!(o && o.done && o.done[n]); } catch (e) { return false; } }
     let themeId = "midnight";
     try { const t = localStorage.getItem("popcatch-theme"); if (THEMES[t] && rewardDone(THEMES[t].unlock)) themeId = t; } catch (e) {}
     let TH = THEMES[themeId];
@@ -747,7 +748,7 @@
       const o = audioCtx.createOscillator(); if (kind === "tri") o.type = "triangle"; else o.setPeriodicWave(pulse25());
       o.frequency.setValueAtTime(f, t0); envOsc(o, t0, dur, vol, 0.002);
     }
-    // 「あすの星」専用: 曲の調（ト長調）のペンタトニック（ソ・ラ・シ・レ・ミ）だけで鳴らす。やわらかい立ち上がりと、ほんのり揺れる余韻
+    // 「あしたの星」専用: 曲の調（ト長調）のペンタトニック（ソ・ラ・シ・レ・ミ）だけで鳴らす。やわらかい立ち上がりと、ほんのり揺れる余韻
     const star = (f, t0, vol, len) => partials(f, t0, len || 0.7, vol, [[1, 1, 1], [1.003, 0.5, 0.9], [2, 0.26, 0.55], [3, 0.1, 0.35]]);
     function playSEExtra(type) {
       const now = audioCtx.currentTime;
@@ -1099,7 +1100,7 @@
     // 隠し曲（secret）は、ストーリー第11話をクリアするまで曲リスト・記録に出さない
     function songShown(sg) {
       if (!sg || !sg.secret) return true;
-      try { const o = JSON.parse(localStorage.getItem("jn-story") || "null"); return !!(o && o.done && o.done[11]); } catch (e) { return false; }
+      try { const o = JSON.parse(localStorage.getItem("jn-story-test") || "null"); return !!(o && o.done && o.done[11]); } catch (e) { return false; }
     }
     try { const sid = localStorage.getItem("popcatch-song-id"); const si = SONGS.findIndex(x => x.id === sid); if (si >= 0 && songShown(SONGS[si])) songIdx = si; } catch (e) {}
     let BPM = SONGS[songIdx].bpm;
@@ -2632,7 +2633,7 @@
     (function buildThemeUI() {
       const tb = document.getElementById("themeBtns"), sb = document.getElementById("seBtns");
       Object.keys(THEMES).forEach(id => { const b = document.createElement("button"); b.className = "style-btn"; b.dataset.t = id; b.dataset.unlock = THEMES[id].unlock || ""; b.textContent = THEMES[id].name; b.onclick = () => setTheme(id); tb.appendChild(b); });
-      [["standard", "標準"], ["perc", "パーカッション"], ["synth", "シンセ"], ["bell", "きらきら"], ["bubble", "ぽよん"], ["punit", "ぷにっ"], ["marimba", "木琴"], ["chip", "8ビット"], ["ashita", "あすの星", 11], ["none", "なし"]].forEach(([id, nm, ul]) => { const b = document.createElement("button"); b.className = "style-btn"; b.dataset.t = id; b.dataset.unlock = ul || ""; b.textContent = nm; b.onclick = () => setSeStyle(id, true); sb.appendChild(b); });
+      [["ashita", "あしたの星", 11], ["standard", "標準"], ["perc", "パーカッション"], ["synth", "シンセ"], ["bell", "きらきら"], ["bubble", "ぽよん"], ["punit", "ぷにっ"], ["marimba", "木琴"], ["chip", "8ビット"], ["none", "なし"]].forEach(([id, nm, ul]) => { const b = document.createElement("button"); b.className = "style-btn"; b.dataset.t = id; b.dataset.unlock = ul || ""; b.textContent = nm; b.onclick = () => setSeStyle(id, true); sb.appendChild(b); });
       setTheme(themeId); setSeStyle(seStyle, false); setSwapInput(swapInput);
       const sb2 = document.getElementById("shapeBtns");
       BALL_SHAPES.forEach(([id, nm, ul]) => { const b = document.createElement("button"); b.className = "style-btn"; b.dataset.v = id; b.dataset.unlock = ul || ""; b.textContent = nm; b.onclick = () => setBallShape(id); sb2.appendChild(b); });
@@ -2652,8 +2653,8 @@
     var JW = 1;   // 判定のゆるさ（おたすけ「判定ゆるめ」で広がる）
     const story = { active: false, ep: null, prev: null, shield: 0, shieldUsed: 0, gaugeMul: 1, c50: 0, c100: 0, res: null };
     const SV = { pt: 0, done: {}, sup: { judge: true, shield: true, gauge: true, ptup: true, start: true } };
-    try { const o = JSON.parse(localStorage.getItem("jn-story") || "null"); if (o) { SV.pt = o.pt | 0; SV.done = o.done || {}; Object.assign(SV.sup, o.sup || {}); } } catch (e) {}
-    function svSave() { try { localStorage.setItem("jn-story", JSON.stringify(SV)); } catch (e) {} }
+    try { const o = JSON.parse(localStorage.getItem("jn-story-test") || "null"); if (o) { SV.pt = o.pt | 0; SV.done = o.done || {}; Object.assign(SV.sup, o.sup || {}); } } catch (e) {}
+    function svSave() { try { localStorage.setItem("jn-story-test", JSON.stringify(SV)); } catch (e) {} }
     // レベルは20まで。Lv10（累計1580Pt）あたりが、全話を順にクリアしていくペース。それより上は、何度も挑戦する人向けの救済
     const LV_PT = [0, 60, 150, 270, 420, 600, 800, 1030, 1290, 1580, 1900, 2250, 2640, 3070, 3540, 4050, 4600, 5200, 5850, 6550];
     // おたすけスキル：レベルごとの効果値を返す（解放前は null）。1レベルごとに少しずつ強くなる
@@ -2695,7 +2696,7 @@
     const RETRYS = S("やり直しだ。何度でも付き合ってやる。");
     const U = "usagi", P = "penguin", K = "kuma", H = "hitsuji", F = "kitsune", W = "kawauso", M = "kame";
     const STORY_EPS = [{
-      n: 1, title: "星が落ちた夜", songId: "juggle", diff: "easy", note: "normal", goal: 0.68, bg: "dark", bgClear: "lit",
+      n: 1, title: "星が落ちた夜", songId: "juggle", diff: "easy", note: "fixed", goal: 0.68, bg: "dark", bgClear: "lit",
       pre: [
         N("その夜、空の星がいくつも落ちた。理由は、誰にもわからない。"),
         N("それから、街から笑い声が消えていった。"),
@@ -2706,7 +2707,7 @@
           ["「星が、落ちちゃったから……」", [C("ああ。でも、原因なんてどうでもいい。顔を上げさせる方法を考えろ。")]],
           ["「きみは、だれ？」", [C("ただの黒猫だ。名前なんて、そのうち分かる。……いいから聞け。")]]
         ] },
-        C("お前の出番だ。一曲、聴かせてやろうぜ。"),
+        C("お前の出番だ。一曲、聴かせてやれ。"),
         C("言葉はいらねえ。音だけで十分だ。この街のやつらは、言葉じゃ顔を上げない。"),
         C("……いくぞ。")
       ],
@@ -2719,7 +2720,7 @@
           ["「もっと、見たいな」", [C("だろうな。……分かってきたじゃないか。")]]
         ] },
         C("なあ。この街の外にも、顔を下げてるやつがいる。"),
-        C("……行くぞ。お前の音を、もっと聴かせてやろうぜ。", "smile"),
+        C("……ついてこい。お前の音を、聴かせてやれよ。", "smile"),
         N("旅人は荷物をまとめて、黒猫のあとを歩きだした。"),
         N("こうして、旅人と黒猫の旅が始まった。")
       ],
@@ -2741,7 +2742,7 @@
         A(U, "でも、一歩を踏み出そうとすると、足が止まっちゃう。もし何もなかったら、って。", "worry"),
         C("何もなかったら、帰ってきりゃいい。それだけだ。"),
         A(U, "……そうだよね。でも、それが、こわいんだ。", "worry"),
-        C("ふん。……お前の出番だ。一曲、頼むぞ。")
+        C("ふん。……お前の出番だ。一曲、聴かせてやれ。")
       ],
       clear: [
         N("波の音に、音楽が重なった。ウサギの足が、ゆっくりと砂を踏んだ。"),
@@ -2771,7 +2772,7 @@
         A(K, "それからは、書いてるのに、だれにも見せられなくて。", "worry"),
         C("笑うやつの言うことなんか、半分聞いとけ。"),
         C("夢ってのは、お前のもんだ。他のやつが決めるもんじゃない。"),
-        C("……お前の出番だ。この子に、聴かせてやろうぜ。")
+        C("……お前の出番だ。この子に、聴かせてやれ。")
       ],
       clear: [
         N("夜の丘に、音が広がった。子ぐまは、ノートをぎゅっと抱きしめて、それから、ゆっくりと開いた。"),
@@ -2855,7 +2856,7 @@
         A(H, "……ごめんなさい。わたし、笑いたいのに、笑えないの。", "normal"),
         A(U, "ぼくの魔法、ほんとに心まで届くのかな。自信が、なくなっちゃった。", "worry"),
         C("魔法ってのは、自信のあるなしで効くもんじゃない。……たぶんな。"),
-        C("お前の出番だ。ウサギの魔法と、一緒に頼むぞ。")
+        C("お前の出番だ。ウサギの魔法と、一緒にやれ。")
       ],
       clear: [
         N("音に合わせて、ウサギの魔法が、舞台にきらきらと広がった。"),
@@ -2887,7 +2888,7 @@
         C("歩けば、わかることもある。足の裏でも、風でもな。"),
         A(F, "……ここの風、少し冷たくなってきましたね。"),
         C("ほらな。"),
-        C("お前の出番だ。この道に、音を足してやろうぜ。")
+        C("お前の出番だ。この道に、音を足してやれ。")
       ],
       clear: [
         N("歩く足音に、音楽が重なった。木々の葉が、赤く、黄色く、少しずつ色づいていった。"),
@@ -2922,7 +2923,7 @@
       clear: [
         N("高台に、音が広がっていった。黒猫の耳が、ゆっくりと立った。"),
         N("夜空に、星がひとつ戻ってきた。それは、白く、まっすぐに光る星だった。"),
-        C("……あの星、見えるか。", "serious"),
+        C("……あの星、見ろ。", "serious"),
         C("いつだったか、星の名前を覚えたことがあった。あれは、スピカっていう。"),
         C("あの星の名前を、もらう。……俺は、スピカだ。", "serious"),
         { choice: [
@@ -2945,7 +2946,7 @@
         ] },
         A(W, "決めたのに、足が震えるんです。ここが、ぼくの新しいスタートラインなのに。", "worry"),
         S("震えてても、立てりゃそれでいい。"),
-        S("……お前の出番だ。この門出に、音を送ってやろうじゃないか。")
+        S("……お前の出番だ。この門出に、音を送ってやれ。")
       ],
       clear: [
         N("十字路に、音がやさしく響いた。カワウソの震えが、少しずつ収まっていった。"),
@@ -2988,7 +2989,7 @@
         N("町に、色が戻ってくる。そして、夜空には、数えきれないほどの星が、いっせいに戻ってきた。"),
         S("……ふん。悪くない夜空だな。", "smile"),
         { choice: [
-          ["「ほんとに、きれいだね」", [S("ああ。……しばらく、眺めてようぜ。", "smile")]],
+          ["「ほんとに、きれいだね」", [S("ああ。……しばらく、眺めてろ。", "smile")]],
           ["「また、旅に出よう」", [S("あたりまえだ。", "smile")]]
         ] },
         S("さて、行くか。まだ、行ってない街がたくさんある。"),
@@ -3003,7 +3004,7 @@
         S("……ここにいたのか。"),
         S("星、きれいだな。でも、ひとつだけ、気になってたことがある。"),
         { choice: [
-          ["「気になってたこと？」", [S("ああ。よく見ておけよ。")]],
+          ["「気になってたこと？」", [S("ああ。よく見ろ。")]],
           ["「どこを見てるの？」", [S("あっちだ。")]]
         ] },
         N("空を見渡すと、ひとつだけ、星のないところがあった。黒い点のような、小さな空き。"),
@@ -3025,7 +3026,7 @@
           ["「みんな……」", [A(U, "今度は、ぼくたちから。", "smile")]],
           ["「どうしてここに？」", [A(P, "星が、教えてくれました。")]]
         ] },
-        S("……今度は、お前の番だ。お前自身に、一曲、聴かせてやってくれ。"),
+        S("……今度は、お前の番だ。お前自身に、一曲、聴かせてやれ。"),
         S("俺たちが、聴いてやる。")
       ],
       clear: [
@@ -3038,7 +3039,9 @@
           ["「ありがとう」", [S("礼なら、こっちのセリフだ。", "smile")]],
           ["「ぼくも、笑っていいかな」", [S("あたりまえだ。", "smile")]]
         ] },
-        N("空が、ゆっくりと白んでいく。"),
+        N("空が、ゆっくりと白んでいく。朝が来ても、星は消えるわけではない。見えなくなるだけで、ずっとそこにある。"),
+        S("朝になっても、星はある。見えないだけでな。"),
+        S("俺たちも、そうだ。別々の場所にいても、ちゃんとつながってる。"),
         S("……さて、行くか。アス。", "smile"),
         N("朝日がのぼる。旅人とスピカの旅は、これからも続く。"),
         N("旅人の曲『明日の星』が、通常モードで遊べるようになった。")
@@ -3214,8 +3217,17 @@
     // ---------- ストーリー画面 ----------
     function storyOpen() { story.active = false; storyRender(); showView("story"); }
     function storyBack() { showView("menu"); }
+    (function(){
+      const sel=document.getElementById("stTestLv"), dn=document.getElementById("stTestDone");
+      for(let i=1;i<=LV_PT.length;i++){const o=document.createElement("option");o.value=i;o.textContent="Lv "+i;sel.appendChild(o);}
+      for(let i=0;i<=11;i++){const o=document.createElement("option");o.value=i;o.textContent=i?("第"+i+"話まで"):"なし";dn.appendChild(o);}
+      sel.onchange=()=>{SV.pt=LV_PT[sel.value-1];svSave();storyRender();};
+      dn.onchange=()=>{SV.done={};for(let n=1;n<=+dn.value;n++)SV.done[n]=1;svSave();refreshSongList();refreshRewardUI();storyRender();};
+      document.getElementById("stTestReset").onclick=()=>{SV.pt=0;SV.done={};svSave();refreshSongList();refreshRewardUI();storyRender();};
+    })();
     function storyRender() {
-      const lv = svLevel(), next = LV_PT[lv] === undefined ? null : LV_PT[lv];
+      const lv = svLevel(); { const t=document.getElementById("stTestLv"); if(t) t.value=lv; const d=document.getElementById("stTestDone"); if(d){let m=0;for(let n=1;n<=11;n++){if(SV.done[n])m=n;else break;}d.value=m;} }
+      const next = LV_PT[lv] === undefined ? null : LV_PT[lv];
       document.getElementById("stStatus").textContent = "スマイル Lv " + lv + "　" + SV.pt + " Pt" + (next === null ? "（最大）" : "（次のLvまで " + (next - SV.pt) + "）");
       const lo = LV_PT[lv - 1], hi = next === null ? lo + 1 : next;
       document.getElementById("stBar").style.width = (next === null ? 100 : Math.round((SV.pt - lo) / (hi - lo) * 100)) + "%";
@@ -3287,7 +3299,7 @@
       const ep = story.ep, cleared = story.res.cleared;
       const first = story.res.first, n = ep.n;
       const endCard = '<div class="star">✦</div><div class="t">第' + n + '話　クリア</div><div class="s">夜空に、星がひとつ戻ってきた</div>' +
-        (first ? '<div class="rule"></div><div class="s" style="color:#ffd54f">' + (n < 10 ? "第" + (n + 1) + "話が読めるようになった" : n === 10 ? "もうひとつ、お話が読めるようになった" : "『明日の星』が、通常モードで遊べるようになった") + '</div>' + ({ 7: "ボール『もみじ』が、設定で選べるようになった", 10: "ボール『しずく』とテーマ『はいいろ』が、設定で選べるようになった", 11: "ボール『きらめき』・テーマ・効果音『あすの星』が、設定で選べるようになった" }[n] ? '<div class="s" style="color:#ffd54f;margin-top:6px">' + { 7: "ボール『もみじ』が、設定で選べるようになった", 10: "ボール『しずく』とテーマ『はいいろ』が、設定で選べるようになった", 11: "ボール『きらめき』・テーマ・効果音『あすの星』が、設定で選べるようになった" }[n] + '</div>' : "") : "");
+        (first ? '<div class="rule"></div><div class="s" style="color:#ffd54f">' + (n < 10 ? "第" + (n + 1) + "話が読めるようになった" : n === 10 ? "もうひとつ、お話が読めるようになった" : "『明日の星』が、通常モードで遊べるようになった") + '</div>' + ({ 7: "ボール『もみじ』が、設定で選べるようになった", 10: "ボール『しずく』とテーマ『はいいろ』が、設定で選べるようになった", 11: "ボール『きらめき』・テーマ・効果音『あしたの星』が、設定で選べるようになった" }[n] ? '<div class="s" style="color:#ffd54f;margin-top:6px">' + { 7: "ボール『もみじ』が、設定で選べるようになった", 10: "ボール『しずく』とテーマ『はいいろ』が、設定で選べるようになった", 11: "ボール『きらめき』・テーマ・効果音『あしたの星』が、設定で選べるようになった" }[n] + '</div>' : "") : "");
       stTrans("", 260, () => {
         resetToTitle();
         nvSetBg(cleared ? (ep.bgClear || ep.bg || "lit") : (ep.bg || "dark")); nvHideChar();
