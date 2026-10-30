@@ -370,6 +370,8 @@
     .zk-card .zi svg, .zk-card .zi img, .zk-face .zi svg, .zk-face .zi img { max-width: 100%; max-height: 100%; width: auto; height: 100%; object-fit: contain; }
     .zk-card b { font-size: 13px; }
     .zk-card small { color: #b8aecf; font-size: 10px; }
+    .zk-card.sel { border-color: #ffd54f; background: rgba(90,70,150,.95); box-shadow: 0 0 12px rgba(255,213,79,.55); }
+    .zk-card.sel b { color: #ffd54f; }
     .zk-card.lock { cursor: default; opacity: .6; }
     .zk-card.lock .zi { font-size: 34px; color: #8a80b8; }
     .zk-detail { display: none; flex-direction: column; align-items: center; gap: 8px; width: min(420px, 94%); padding: 12px; border-radius: 14px; border: 2px solid #ffd54f; background: rgba(30,24,64,.95); color: #fff; box-sizing: border-box; }
@@ -3325,10 +3327,10 @@
       const grid = document.getElementById("zkGrid"); grid.innerHTML = "";
       ZK.forEach(c => {
         const ok = !!SV.done[c.ep], b = document.createElement("button");
-        b.className = "zk-card" + (ok ? "" : " lock");
+        b.className = "zk-card" + (ok ? "" : " lock") + (ok && zkSel === c.id ? " sel" : "");
         const nm = ok ? (c.id === "cat" && SV.done[8] ? "黒猫（スピカ）" : c.name) : "？？？";
         b.innerHTML = '<div class="zi"></div><b>' + nm + '</b><small>' + (ok ? "第" + c.ep + "話" : "第" + c.ep + "話で会える") + '</small>';
-        if (ok) { zkImg(b.querySelector(".zi"), c.id, "normal"); b.onclick = () => { zkSel = c.id; zkFace = "normal"; zukanDetail(); }; }
+        if (ok) { zkImg(b.querySelector(".zi"), c.id, "normal"); b.onclick = () => { zkSel = c.id; zkFace = "normal"; zukanRender(); const d = document.getElementById("zkDetail"); if (d.scrollIntoView) d.scrollIntoView({ behavior: "smooth", block: "nearest" }); }; }
         else b.querySelector(".zi").textContent = "？";
         grid.appendChild(b);
       });
